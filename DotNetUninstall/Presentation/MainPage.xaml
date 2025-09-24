@@ -1,0 +1,85 @@
+﻿<Page x:Class="DotNetUninstall.Presentation.MainPage" x:Name="RootPage"
+      xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+      xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+  xmlns:utu="using:Uno.Toolkit.UI"
+  xmlns:sys="using:System"
+      xmlns:conv="using:DotNetUninstall.Presentation.Converters"
+      Loaded="Page_Loaded"
+      Background="{ThemeResource ApplicationPageBackgroundThemeBrush}">
+  <Page.Resources>
+    <conv:NullToVisibilityConverter x:Key="NullToVisibilityConverter" />
+    <conv:BoolToVisibilityConverter x:Key="BoolToVisibilityConverter" />
+  <conv:BoolToVisibilityConverter x:Key="InverseBoolToVisibilityConverter" Invert="True" />
+    <DataTemplate x:Key="InstallEntryTemplate">
+      <Grid ColumnDefinitions="Auto,*,Auto" Padding="4" MinHeight="40" ToolTipService.ToolTip="{Binding Reason}">
+        <StackPanel Orientation="Vertical" Margin="4" Spacing="2">
+          <TextBlock Text="{Binding Version}" FontWeight="SemiBold"/>
+          <StackPanel Orientation="Horizontal" Spacing="4">
+            <Border Background="#334D5C" CornerRadius="4" Padding="4,2" VerticalAlignment="Center">
+              <TextBlock Text="{Binding Architecture}" FontSize="11" Foreground="White"/>
+            </Border>
+            <Border Background="#556270" CornerRadius="4" Padding="4,2" VerticalAlignment="Center" Visibility="{Binding Reason, Converter={StaticResource NullToVisibilityConverter}}">
+              <TextBlock Text="{Binding Reason}" FontSize="11" Foreground="White" TextTrimming="CharacterEllipsis" MaxWidth="240"/>
+            </Border>
+            <Border Background="#8A9BA8" CornerRadius="4" Padding="4,2" VerticalAlignment="Center" Visibility="{Binding CanUninstall, Converter={StaticResource BoolToVisibilityConverter}}">
+              <TextBlock Text="Removable" FontSize="11" Foreground="White"/>
+            </Border>
+          </StackPanel>
+        </StackPanel>
+        <Button Content="Uninstall" Grid.Column="2" Margin="4"
+                Command="{Binding ElementName=RootPage, Path=DataContext.UninstallCommand}"
+                CommandParameter="{Binding}" IsEnabled="{Binding CanUninstall}"/>
+      </Grid>
+    </DataTemplate>
+  </Page.Resources>
+  <Grid RowDefinitions="Auto,*,Auto">
+    <utu:NavigationBar Content="{Binding Title}" />
+    <Pivot Grid.Row="1" x:Name="MainPivot">
+      <PivotItem Header="Runtimes">
+        <StackPanel>
+          <TextBlock FontSize="12" Opacity="0.7" Margin="12,0,12,8"><Run Text="Count: "/><Run Text="{Binding RuntimeCount}"/></TextBlock>
+          <ListView x:Name="RuntimeList" ItemsSource="{Binding RuntimeItems}" ItemTemplate="{StaticResource InstallEntryTemplate}" SelectionMode="None"/>
+        </StackPanel>
+      </PivotItem>
+      <PivotItem Header="SDKs">
+        <StackPanel>
+          <TextBlock FontSize="12" Opacity="0.7" Margin="12,0,12,8"><Run Text="Count: "/><Run Text="{Binding SdkCount}"/></TextBlock>
+          <ListView x:Name="SdkList" ItemsSource="{Binding SdkItems}" ItemTemplate="{StaticResource InstallEntryTemplate}" SelectionMode="None"/>
+        </StackPanel>
+      </PivotItem>
+      <PivotItem Header="Settings">
+        <StackPanel Spacing="8" Padding="12">
+          <StackPanel Orientation="Horizontal" Spacing="8" VerticalAlignment="Center">
+            <Button Content="Refresh" Command="{Binding RefreshCommand}"/>
+            <ProgressRing Width="24" Height="24" IsActive="{Binding IsLoading}"/>
+            <TextBlock Text="{Binding StatusMessage}" VerticalAlignment="Center" Margin="8,0,0,0"/>
+          </StackPanel>
+          <StackPanel Orientation="Horizontal" Spacing="4" VerticalAlignment="Center">
+            <TextBlock Text="Tool:" VerticalAlignment="Center"/>
+            <TextBox Width="320" Text="{Binding UninstallToolPath, Mode=TwoWay}"/>
+            <Button Content="Browse" Command="{Binding BrowseCommand}"/>
+            <Button Content="Apply" Command="{Binding ApplyToolPathCommand}"/>
+            <TextBlock Margin="12,0,0,0" VerticalAlignment="Center" FontSize="11" Opacity="0.6" Visibility="{Binding UninstallToolVersion, Converter={StaticResource NullToVisibilityConverter}}">
+              <Run Text="ver "/><Run Text="{Binding UninstallToolVersion}"/>
+            </TextBlock>
+          </StackPanel>
+          <StackPanel Background="#22000000" Padding="8" Spacing="6" CornerRadius="6" Visibility="{Binding HasUninstallTool, Converter={StaticResource InverseBoolToVisibilityConverter}}">
+            <TextBlock Text="dotnet-core-uninstall tool not detected." FontWeight="Bold"/>
+            <TextBlock TextWrapping="WrapWholeWords">
+              <Run Text="Download from "/>
+              <Hyperlink NavigateUri="https://github.com/dotnet/cli-lab/releases">
+                <Run Text="GitHub Releases"/>
+              </Hyperlink>
+              <Run Text=" and select the package matching your OS/architecture below:"/>
+            </TextBlock>
+            <TextBlock FontSize="12" Text="Suggested download:"/>
+            <TextBlock FontSize="12" FontWeight="SemiBold" Text="{Binding SuggestedDownload}"/>
+            <TextBlock FontSize="11" Opacity="0.7" Text="After download, set DOTNET_UNINSTALL_TOOL env var or browse to the executable."/>
+          </StackPanel>
+          <TextBlock Foreground="Red" TextWrapping="WrapWholeWords" Text="{Binding ErrorMessage}"/>
+        </StackPanel>
+      </PivotItem>
+    </Pivot>
+    <TextBlock Grid.Row="2" FontSize="10" Opacity="0.6" Margin="12,0,12,8" Text="If an uninstall fails due to permissions, run manually in terminal with elevated rights."/>
+  </Grid>
+</Page>
