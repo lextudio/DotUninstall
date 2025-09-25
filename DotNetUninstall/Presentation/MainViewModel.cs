@@ -3,6 +3,7 @@ using System.Diagnostics;
 using System.Text.RegularExpressions;
 using System.Collections.Specialized;
 using System.Text.Json;
+using NuGet.Versioning;
 using System.Runtime.InteropServices;
 using CommunityToolkit.Mvvm.ComponentModel;
 using CommunityToolkit.Mvvm.Input;
@@ -247,7 +248,7 @@ public partial class MainViewModel : ObservableObject
                 {
                     _channelCache.TryGetValue(channel, out meta);
                 }
-                var previewKind = DerivePreviewKind(baseEntry.Version);
+                var (previewKind, previewNum) = DerivePreviewInfo(baseEntry.Version);
                 bool isPreview = previewKind != "ga";
                 bool outOfSupport = meta != null && (meta.SupportPhase == "eol" || (meta.EolDate.HasValue && meta.EolDate.Value < DateTime.UtcNow.Date));
                 bool isSecurity = meta != null && ((baseEntry.Type == "sdk" && meta.SecurityVersions.Contains(baseEntry.Version)) || (baseEntry.Type == "runtime" && meta.SecurityVersions.Contains(baseEntry.Version)));
@@ -258,6 +259,7 @@ public partial class MainViewModel : ObservableObject
                     SupportPhase = meta?.SupportPhase,
                     IsOutOfSupport = outOfSupport,
                     PreviewKind = previewKind,
+                    PreviewNumber = previewNum,
                     IsPreview = isPreview,
                     IsSecurityUpdate = isSecurity,
                     EolDate = meta?.EolDate
@@ -319,19 +321,41 @@ public partial class MainViewModel : ObservableObject
 
     private static string DeriveChannel(string version)
     {
-        // Take first two numeric segments; fallback to first segment if only one.
+        if (NuGet.Versioning.NuGetVersion.TryParse(version, out var nv))
+        {
+            return nv.Major + "." + nv.Minor;
+        }
+        // Fallback to previous heuristic
         var parts = version.Split('.', StringSplitOptions.RemoveEmptyEntries);
         if (parts.Length >= 2 && int.TryParse(parts[0], out _) && int.TryParse(parts[1], out _)) return parts[0] + "." + parts[1];
         if (parts.Length >= 1) return parts[0];
         return version;
     }
 
-    private static string DerivePreviewKind(string version)
+    private static (string kind, int? number) DerivePreviewInfo(string version)
     {
+        if (NuGet.Versioning.NuGetVersion.TryParse(version, out var nv))
+        {
+            if (!nv.IsPrerelease) return ("ga", null);
+            // nv.ReleaseLabels is IEnumerable<string>
+            var labels = nv.ReleaseLabels?.ToArray() ?? Array.Empty<string>();
+            if (labels.Length == 0) return ("ga", null);
+            var first = labels[0].ToLowerInvariant();
+            if (first == "preview" || first == "rc")
+            {
+                int? num = null;
+                if (labels.Length > 1 && int.TryParse(labels[1], out var n)) num = n;
+                return (first, num);
+            }
+            return ("ga", null);
+        }
+        // Fallback regex (should rarely be needed once parsing succeeds)
         var v = version.ToLowerInvariant();
-        if (v.Contains("-preview.")) return "preview";
-        if (v.Contains("-rc.")) return "rc";
-        return "ga";
+        var m = System.Text.RegularExpressions.Regex.Match(v, "-(preview|rc)(?:\\.(?<n>[0-9]+))?");
+        if (!m.Success) return ("ga", null);
+        int? num2 = null;
+        if (m.Groups["n"].Success && int.TryParse(m.Groups["n"].Value, out var parsed2)) num2 = parsed2;
+        return (m.Groups[1].Value, num2);
     }
 
     private async Task EnsureMetadataAsync(HashSet<string> neededChannels)

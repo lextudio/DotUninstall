@@ -18,6 +18,7 @@ public partial record DotnetInstallEntry
     public bool IsOutOfSupport { get; init; }
     public string? ReleaseType { get; init; }       // lts | sts
     public string? PreviewKind { get; init; }       // preview | rc | ga
+    public int? PreviewNumber { get; init; }         // e.g. 3 for -preview.3 or -rc.3
     public bool IsSecurityUpdate { get; init; }
     public DateTime? EolDate { get; init; }         // official end of life (channel) if provided
 }
