@@ -48,7 +48,6 @@ public partial class MainViewModel : ObservableObject
     public IAsyncRelayCommand RefreshCommand { get; }
     public IAsyncRelayCommand<DotnetInstallEntry> UninstallCommand { get; }
     public IAsyncRelayCommand BrowseCommand { get; }
-    public IAsyncRelayCommand ApplyToolPathCommand { get; }
 
     public string Title { get; }
 
@@ -59,7 +58,6 @@ public partial class MainViewModel : ObservableObject
         RefreshCommand = new AsyncRelayCommand(RefreshAsync);
         UninstallCommand = new AsyncRelayCommand<DotnetInstallEntry>(UninstallAsync, _ => HasUninstallTool);
         BrowseCommand = new AsyncRelayCommand(BrowseAsync);
-        ApplyToolPathCommand = new AsyncRelayCommand(ApplyToolPathAsync);
         SdkItems.CollectionChanged += (_, __) =>
         {
             OnPropertyChanged(nameof(SdkCount));
@@ -126,7 +124,7 @@ public partial class MainViewModel : ObservableObject
         if (string.IsNullOrWhiteSpace(path))
         {
             var candidates = new List<string>();
-            var fileNames = OperatingSystem.IsWindows() ? new[] { "dotnet-core-uninstall.exe" } : new[] { "dotnet-core-uninstall" };
+            var fileName = OperatingSystem.IsWindows() ? "dotnet-core-uninstall.exe" : "dotnet-core-uninstall";
             var baseDir = AppContext.BaseDirectory;
             var cwd = Directory.GetCurrentDirectory();
             var home = Environment.GetFolderPath(Environment.SpecialFolder.UserProfile);
@@ -141,11 +139,8 @@ public partial class MainViewModel : ObservableObject
             };
             foreach (var d in potentialDirs.Distinct())
             {
-                foreach (var fn in fileNames)
-                {
-                    var full = Path.Combine(d, fn);
-                    if (File.Exists(full)) candidates.Add(full);
-                }
+                var full = Path.Combine(d, fileName);
+                if (File.Exists(full)) candidates.Add(full);
             }
             path = candidates.FirstOrDefault();
         }
@@ -171,8 +166,8 @@ public partial class MainViewModel : ObservableObject
     private string BuildSuggestedDownload()
     {
         // Tailored to release 1.7.618124 assets (5 assets total: 3 binaries + 2 source archives)
-        // Binaries present: Windows x64 MSI, macOS x64 tar.gz, macOS arm64 tar.gz
-        // Not present: Linux binaries, Windows arm64-specific MSI (arm64 users install x64 under emulation)
+        // Binaries present: Windows MSI, macOS x64 tar.gz, macOS arm64 tar.gz
+        // Not present: Linux binaries
         try
         {
             if (OperatingSystem.IsWindows())
