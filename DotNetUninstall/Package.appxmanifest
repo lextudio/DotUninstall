@@ -21,7 +21,15 @@
     <Application Id="App"
       Executable="$targetnametoken$.exe"
       EntryPoint="$targetentrypoint$">
-      <uap:VisualElements />
+      <uap:VisualElements
+        DisplayName="DotNet Uninstall Tool UI"
+        Square150x150Logo="Assets/Images/logo.png"
+        Square44x44Logo="Assets/Images/logo.png"
+        Description="UI for Microsoft's dotnet-core-uninstall utility"
+        BackgroundColor="transparent">
+        <uap:DefaultTile Wide310x150Logo="Assets/Images/logo.png" Square310x310Logo="Assets/Images/logo.png" Square71x71Logo="Assets/Images/logo.png"/>
+        <uap:SplashScreen Image="Assets/Images/logo.png"/>
+      </uap:VisualElements>
     </Application>
   </Applications>
 

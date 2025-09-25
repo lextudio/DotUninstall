@@ -31,7 +31,9 @@ param(
   [string[]]$Rids = @('osx-arm64','osx-x64'),
   [string]$Configuration = 'Release',
   [string]$Version,
-  [switch]$Dmg
+  [switch]$Dmg,
+  [string]$IconPath,
+  [switch]$VerifyIcon
 )
 
 Set-StrictMode -Version Latest
@@ -49,7 +51,8 @@ if (-not $Version) {
   $Version = if ($xml -match '<ApplicationDisplayVersion>(?<v>[^<]+)') { $Matches['v'] } else { '0.0.0' }
 }
 
-$Artifacts = Join-Path (Get-Location) 'artifacts'
+$RepoRoot = Resolve-Path (Join-Path $PSScriptRoot '..')
+$Artifacts = Join-Path $RepoRoot 'artifacts'
 $ReleaseOut = Join-Path $Artifacts 'release'
 New-Item -ItemType Directory -Force -Path $ReleaseOut | Out-Null
 $OutRoot   = Join-Path $Artifacts 'publish'
@@ -67,14 +70,60 @@ foreach ($rid in $Rids) {
   Step "Publishing $rid"
   $ridOut = Join-Path $OutRoot $rid
   dotnet publish $Project -c $Configuration -r $rid -p:PackageFormat=app -o $ridOut | Out-Null
-  # Search for .app produced by Uno (common under publish root)
   $app = Get-ChildItem $ridOut -Directory -Filter '*.app' -Recurse | Select-Object -First 1
   if (-not $app) { throw "No .app bundle found for $rid (check Uno macOS target configuration)." }
   Info "Found bundle: $($app.FullName)"
-  $bi = [BundleInfo]::new()
-  $bi.Rid = $rid
-  $bi.Path = $app.FullName
-  $AppBundles += $bi
+  $bi = [BundleInfo]::new(); $bi.Rid = $rid; $bi.Path = $app.FullName; $AppBundles += $bi
+
+  if ($IconPath) {
+    if (-not (Test-Path $IconPath)) { throw "Icon file not found: $IconPath" }
+    $resourcesDir = Join-Path $app.FullName 'Contents/Resources'
+    if (-not (Test-Path $resourcesDir)) { throw "Unexpected bundle layout, missing Resources: $resourcesDir" }
+    $targetIcns = Join-Path $resourcesDir 'icon.icns'
+    Step "Applying custom icon -> $targetIcns"
+    Copy-Item $IconPath $targetIcns -Force
+    $plistPath = Join-Path $app.FullName 'Contents/Info.plist'
+    if (Test-Path $plistPath) {
+      # Convert binary plist to XML (safe even if already XML)
+      & plutil -convert xml1 $plistPath
+      $plist = Get-Content $plistPath -Raw
+      if ($plist -match '<key>CFBundleIconFile</key>\s*<string>') {
+        $plist = [regex]::Replace($plist, '(<key>CFBundleIconFile</key>\s*<string>)([^<]+)(</string>)', '$1icon$3')
+      } else {
+        Step "Injecting CFBundleIconFile into $plistPath"
+        $injection = "    <key>CFBundleIconFile</key>`n    <string>icon</string>" + [Environment]::NewLine
+        $plist = $plist -replace '(?s)(</dict>\s*</plist>)', ($injection + '$1')
+      }
+      $plist | Set-Content $plistPath
+      # Optionally convert back to binary for compactness
+      & plutil -convert binary1 $plistPath
+    } else { Warn "Info.plist not found in bundle: $plistPath" }
+
+    if ($VerifyIcon) {
+      $iconutil = Get-Command iconutil -ErrorAction SilentlyContinue
+      if (-not $iconutil) { Warn 'iconutil not found; cannot verify icon visually.' }
+      else {
+        $verifyRoot = Join-Path $Artifacts 'icon-preview'
+        New-Item -ItemType Directory -Force -Path $verifyRoot | Out-Null
+        $ridVerify = Join-Path $verifyRoot $rid
+        Remove-Item $ridVerify -Recurse -Force -ErrorAction SilentlyContinue | Out-Null
+        New-Item -ItemType Directory -Force -Path $ridVerify | Out-Null
+        $iconsetPath = Join-Path $ridVerify 'extracted.iconset'
+        Step "Extracting icon sizes for visual verification ($rid)"
+        & iconutil -c iconset $targetIcns -o $iconsetPath | Out-Null
+        # Flatten copies of PNGs for quick viewing
+        Get-ChildItem $iconsetPath -Filter '*.png' | ForEach-Object {
+          Copy-Item $_.FullName (Join-Path $ridVerify $_.Name)
+        }
+        # Write a small README with guidance
+        @(
+          'Icon verification output',
+          "RID: $rid", 'Generated from: ' + $IconPath, 'Files:', ''
+        ) + (Get-ChildItem $ridVerify -Filter '*.png' | Sort-Object Name | ForEach-Object { $_.Name }) | Set-Content (Join-Path $ridVerify 'README.txt')
+        Info "Verification assets: $ridVerify (open the PNGs to inspect clarity)"
+      }
+    }
+  }
 }
 
 if ($Dmg) {
