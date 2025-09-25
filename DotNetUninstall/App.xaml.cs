@@ -76,7 +76,7 @@ public partial class App : Application
 #if DEBUG
         MainWindow.UseStudio();
 #endif
-        // Removed SetWindowIcon (extension not available in current template feature set)
+        MainWindow.SetWindowIcon();
 
         Host = await builder.NavigateAsync<Shell>();
     }
