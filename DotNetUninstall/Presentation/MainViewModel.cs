@@ -139,7 +139,9 @@ public partial class MainViewModel : ObservableObject
             {
                 parsed.Add(new DotnetInstallEntry(e.Type, e.Type, e.Version, e.Architecture, e.CanUninstall, e.Reason)
                 {
-                    UninstallCommand = e.UninstallCommand
+                    UninstallCommand = e.UninstallCommand,
+                    DisplayName = e.DisplayName,
+                    SubType = e.SubType
                 });
             }
         }

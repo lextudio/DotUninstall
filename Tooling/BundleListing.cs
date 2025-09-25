@@ -10,8 +10,8 @@ using Microsoft.DotNet.Tools.Uninstall.Windows;
 
 namespace DotNetUninstall.Tooling;
 
-public record BundleInfoEntry(
-    string Type,          // sdk | runtime
+public partial record BundleInfoEntry(
+    string Type,          // coarse: sdk | runtime
     string Version,
     string Architecture,
     bool CanUninstall,
@@ -19,6 +19,12 @@ public record BundleInfoEntry(
     string DisplayName,
     string UninstallCommand
 );
+
+public partial record BundleInfoEntry
+{
+    // More granular runtime flavor: runtime | desktop-runtime | aspnet-runtime | hosting | sdk
+    public string? SubType { get; init; }
+}
 
 public static class BundleListing
 {
@@ -42,16 +48,46 @@ public static class BundleListing
         foreach (var b in bundles)
         {
             var version = b.Version.ToString();
-            string type = b.Version.GetType().Name switch
+            // Coarse grouping for pivot (sdk vs runtime)
+            string type;
+            // Fine subtype for badge display
+            string subType;
+            var typeName = b.Version.GetType().Name;
+            if (typeName.Contains("Sdk", StringComparison.OrdinalIgnoreCase))
             {
-                var n when n.Contains("Sdk", StringComparison.OrdinalIgnoreCase) => "sdk",
-                var n when n.Contains("Runtime", StringComparison.OrdinalIgnoreCase) => "runtime",
-                _ => "runtime"
-            };
+                type = "sdk"; subType = "sdk";
+            }
+            else if (typeName.Contains("AspNetRuntime", StringComparison.OrdinalIgnoreCase))
+            {
+                type = "runtime"; subType = "aspnet-runtime";
+            }
+            else if (typeName.Contains("HostingBundle", StringComparison.OrdinalIgnoreCase))
+            {
+                type = "runtime"; subType = "hosting";
+            }
+            else if (typeName.Contains("Runtime", StringComparison.OrdinalIgnoreCase))
+            {
+                // Distinguish desktop runtime via display name hint
+                if (b.DisplayName.Contains("Windows Desktop", StringComparison.OrdinalIgnoreCase))
+                {
+                    type = "runtime"; subType = "desktop-runtime";
+                }
+                else
+                {
+                    type = "runtime"; subType = "runtime";
+                }
+            }
+            else
+            {
+                type = "runtime"; subType = "runtime";
+            }
             string arch = b.Arch.ToString().ToLowerInvariant();
             reasonMap.TryGetValue(b, out var reason);
             bool canUninstall = uninstallable.Contains(b) && string.IsNullOrEmpty(reason);
-            list.Add(new BundleInfoEntry(type, version, arch, canUninstall, string.IsNullOrEmpty(reason) ? null : reason, b.DisplayName, b.UninstallCommand));
+            list.Add(new BundleInfoEntry(type, version, arch, canUninstall, string.IsNullOrEmpty(reason) ? null : reason, b.DisplayName, b.UninstallCommand)
+            {
+                SubType = subType
+            });
         }
         // Sort for deterministic ordering similar to CLI output: group by type then version descending
         return list

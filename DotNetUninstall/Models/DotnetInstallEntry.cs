@@ -23,4 +23,6 @@ public partial record DotnetInstallEntry
     public DateTime? EolDate { get; init; }         // official end of life (channel) if provided
     // Internal uninstall command (not shown in UI) when using embedded logic instead of external tool
     public string? UninstallCommand { get; init; }
+    public string? DisplayName { get; init; }
+    public string? SubType { get; init; }  // more granular runtime flavor
 }
