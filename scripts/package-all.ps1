@@ -2,8 +2,8 @@
 param(
   [string]$Configuration = 'Release',
   # Windows build modifiers
-  [switch]$WindowsSelfContained,
-  [switch]$WindowsTrim,
+  [switch]$SkipSelfContained,
+  [switch]$SkipTrim,
   # Skips
   [switch]$SkipWindows,
   [switch]$SkipMac,
@@ -44,8 +44,8 @@ if (-not $SkipWindows) {
   Step 'Packaging Windows'
   $winScript = Join-Path $PSScriptRoot 'package-windows.ps1'
   $winArgs = @('-Configuration', $Configuration)
-  if ($WindowsSelfContained.IsPresent) { $winArgs += '-SelfContained' }
-  if ($WindowsTrim.IsPresent) { $winArgs += '-Trim' }
+  if (-not $SkipSelfContained) { $winArgs += '-SelfContained' }
+  # if (-not $SkipTrim) { $winArgs += '-Trim' }
   & $winScript @winArgs | Out-Null
 }
 

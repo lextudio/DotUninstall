@@ -17,12 +17,12 @@ New-Item -ItemType Directory -Force -Path $releaseOut | Out-Null
 
 $ridList = @('win-x64','win-arm64')
 
-$commonPublishArgs = @('publish', $project, '-c', $Configuration, '-p:PublishSingleFile=true', '-p:DebugType=none', '--nologo')
+$commonPublishArgs = @('publish', $project, '-c', $Configuration, '-f', 'net9.0-desktop', '-p:PublishSingleFile=true', '-p:DebugType=none', '--nologo')
 
 if ($SelfContained) {
     $commonPublishArgs += '-p:SelfContained=true'
     $commonPublishArgs += '-p:IncludeNativeLibrariesForSelfExtract=true'
-    $commonPublishArgs += '-p:EnableCompressionInSingleFile=true'
+    $commonPublishArgs += '-p:IncludeAllContentForSelfExtract=true'
 } else {
     $commonPublishArgs += '-p:SelfContained=false'
 }
@@ -42,7 +42,7 @@ foreach ($rid in $ridList) {
     $exe = Get-ChildItem -Path $outDir -Filter '*.exe' | Select-Object -First 1
     if (-not $exe) { Write-Warning "No executable produced for $rid"; continue }
 
-    $finalName = "dotnet-uninstall-ui-$rid" + ($SelfContained ? '-sc' : '') + ($Trim ? '-trim' : '') + '.exe'
+    $finalName = "dotnet-uninstall-ui-$rid" + '.exe'
     $targetPath = Join-Path $releaseOut $finalName
     Copy-Item $exe.FullName $targetPath -Force
 
