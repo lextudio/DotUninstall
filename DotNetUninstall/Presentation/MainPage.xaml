@@ -8,23 +8,46 @@
     <conv:NullToVisibilityConverter x:Key="NullToVisibilityConverter" />
     <conv:BoolToVisibilityConverter x:Key="BoolToVisibilityConverter" />
   <conv:BoolToVisibilityConverter x:Key="InverseBoolToVisibilityConverter" Invert="True" />
+    <conv:StringEqualsToVisibilityConverter x:Key="StringEqualsToVisibilityConverter" />
+  <conv:LifecycleStateToBrushConverter x:Key="LifecycleStateToBrushConverter" />
     <DataTemplate x:Key="InstallEntryTemplate">
-      <Grid ColumnDefinitions="Auto,*,Auto" Padding="4" MinHeight="40" ToolTipService.ToolTip="{Binding Reason}">
-        <StackPanel Orientation="Vertical" Margin="4" Spacing="2">
-          <TextBlock Text="{Binding Version}" FontWeight="SemiBold"/>
-          <StackPanel Orientation="Horizontal" Spacing="4">
+      <Grid ColumnDefinitions="*,Auto" Padding="4" MinHeight="48" ToolTipService.ToolTip="{Binding Reason}">
+        <StackPanel Orientation="Vertical" Margin="4" Spacing="4">
+          <StackPanel Orientation="Horizontal" Spacing="6" VerticalAlignment="Center">
+            <TextBlock Text="{Binding Version}" FontWeight="SemiBold"/>
+          </StackPanel>
+          <StackPanel Orientation="Horizontal" Spacing="4" VerticalAlignment="Center">
+            <!-- Release type (LTS/STS) -->
+            <Border Background="#0E5A8A" CornerRadius="4" Padding="4,2" Visibility="{Binding ReleaseType, Converter={StaticResource NullToVisibilityConverter}}">
+              <TextBlock FontSize="11" Foreground="White" Text="{Binding ReleaseType}"/>
+            </Border>
+            <!-- Preview kind badges -->
+            <Border Background="#75507B" CornerRadius="4" Padding="4,2" Visibility="{Binding PreviewKind, Converter={StaticResource StringEqualsToVisibilityConverter}, ConverterParameter=preview}">
+              <TextBlock Text="Preview" FontSize="11" Foreground="White"/>
+            </Border>
+            <Border Background="#5C3566" CornerRadius="4" Padding="4,2" Visibility="{Binding PreviewKind, Converter={StaticResource StringEqualsToVisibilityConverter}, ConverterParameter=rc}">
+              <TextBlock Text="RC" FontSize="11" Foreground="White"/>
+            </Border>
+            <!-- Security update -->
+            <Border Background="#8A2D3C" CornerRadius="4" Padding="4,2" Visibility="{Binding IsSecurityUpdate, Converter={StaticResource BoolToVisibilityConverter}}">
+              <TextBlock Text="Security" FontSize="11" Foreground="White"/>
+            </Border>
+            <!-- Out of support -->
+            <Border Background="#C0392B" CornerRadius="4" Padding="4,2" Visibility="{Binding IsOutOfSupport, Converter={StaticResource BoolToVisibilityConverter}}">
+              <TextBlock Text="EOL" FontSize="11" Foreground="White"/>
+            </Border>
             <Border Background="#334D5C" CornerRadius="4" Padding="4,2" VerticalAlignment="Center">
               <TextBlock Text="{Binding Architecture}" FontSize="11" Foreground="White"/>
             </Border>
             <Border Background="#556270" CornerRadius="4" Padding="4,2" VerticalAlignment="Center" Visibility="{Binding Reason, Converter={StaticResource NullToVisibilityConverter}}">
-              <TextBlock Text="{Binding Reason}" FontSize="11" Foreground="White" TextTrimming="CharacterEllipsis" MaxWidth="240"/>
+              <TextBlock Text="{Binding Reason}" FontSize="11" Foreground="White" TextTrimming="CharacterEllipsis" MaxWidth="260"/>
             </Border>
-            <Border Background="#8A9BA8" CornerRadius="4" Padding="4,2" VerticalAlignment="Center" Visibility="{Binding CanUninstall, Converter={StaticResource BoolToVisibilityConverter}}">
+            <Border Background="#1F6F50" CornerRadius="4" Padding="4,2" VerticalAlignment="Center" Visibility="{Binding CanUninstall, Converter={StaticResource BoolToVisibilityConverter}}">
               <TextBlock Text="Removable" FontSize="11" Foreground="White"/>
             </Border>
           </StackPanel>
         </StackPanel>
-        <Button Content="Uninstall" Grid.Column="2" Margin="4"
+        <Button Content="Uninstall" Grid.Column="1" Margin="4"
                 Command="{Binding ElementName=RootPage, Path=DataContext.UninstallCommand}"
                 CommandParameter="{Binding}" IsEnabled="{Binding CanUninstall}"/>
       </Grid>
@@ -33,16 +56,74 @@
   <Grid RowDefinitions="Auto,*,Auto">
     <Pivot Grid.Row="1" x:Name="MainPivot">
       <PivotItem Header="Runtimes">
-        <StackPanel>
-          <TextBlock FontSize="12" Opacity="0.7" Margin="12,0,12,8"><Run Text="Count: "/><Run Text="{Binding RuntimeCount}"/></TextBlock>
-          <ListView x:Name="RuntimeList" ItemsSource="{Binding RuntimeItems}" ItemTemplate="{StaticResource InstallEntryTemplate}" SelectionMode="None"/>
-        </StackPanel>
+        <ScrollViewer>
+          <StackPanel>
+            <TextBlock FontSize="12" Opacity="0.7" Margin="12,0,12,8"><Run Text="Count: "/><Run Text="{Binding RuntimeCount}"/></TextBlock>
+            <ItemsControl ItemsSource="{Binding GroupedRuntimeItems}">
+              <ItemsControl.ItemTemplate>
+                <DataTemplate>
+                  <StackPanel Margin="8,0,8,12" Padding="0" CornerRadius="6">
+                    <ToggleButton x:Name="GroupToggle" IsChecked="True" HorizontalAlignment="Stretch" Background="Transparent" BorderThickness="0" Padding="0">
+                      <StackPanel Orientation="Horizontal" Spacing="8" VerticalAlignment="Center">
+                        <TextBlock Text=".NET" FontWeight="Bold" FontSize="14"/>
+                        <TextBlock Text="{Binding Channel}" FontWeight="Bold" FontSize="14"/>
+                      </StackPanel>
+                    </ToggleButton>
+                    <Grid Margin="4,4,4,0" Visibility="{Binding IsChecked, ElementName=GroupToggle, Converter={StaticResource BoolToVisibilityConverter}}">
+                      <ListView ItemsSource="{Binding Items}" ItemTemplate="{StaticResource InstallEntryTemplate}" SelectionMode="None"/>
+                    </Grid>
+                  </StackPanel>
+                </DataTemplate>
+              </ItemsControl.ItemTemplate>
+            </ItemsControl>
+          </StackPanel>
+        </ScrollViewer>
       </PivotItem>
       <PivotItem Header="SDKs">
-        <StackPanel>
-          <TextBlock FontSize="12" Opacity="0.7" Margin="12,0,12,8"><Run Text="Count: "/><Run Text="{Binding SdkCount}"/></TextBlock>
-          <ListView x:Name="SdkList" ItemsSource="{Binding SdkItems}" ItemTemplate="{StaticResource InstallEntryTemplate}" SelectionMode="None"/>
-        </StackPanel>
+        <ScrollViewer>
+          <StackPanel>
+            <TextBlock FontSize="12" Opacity="0.7" Margin="12,0,12,8"><Run Text="Count: "/><Run Text="{Binding SdkCount}"/></TextBlock>
+            <ItemsControl ItemsSource="{Binding GroupedSdkItems}">
+              <ItemsControl.ItemTemplate>
+                <DataTemplate>
+                  <StackPanel Margin="8,0,8,12" Padding="0" CornerRadius="6">
+                    <ToggleButton x:Name="GroupToggle" IsChecked="True" HorizontalAlignment="Stretch" Background="Transparent" BorderThickness="0" Padding="0">
+                      <Border Background="{Binding LifecycleState, Converter={StaticResource LifecycleStateToBrushConverter}}" CornerRadius="4" Padding="6,4" Margin="0,0,0,4">
+                        <StackPanel Orientation="Horizontal" Spacing="8" VerticalAlignment="Center">
+                        <StackPanel Orientation="Horizontal" Spacing="2">
+                          <TextBlock Text=".NET" FontWeight="Bold" FontSize="14"/>
+                          <TextBlock Text="{Binding Channel}" FontWeight="Bold" FontSize="14"/>
+                        </StackPanel>
+                        <Border Background="#0E5A8A" CornerRadius="4" Padding="4,2" Visibility="{Binding ReleaseType, Converter={StaticResource NullToVisibilityConverter}}">
+                          <TextBlock Text="{Binding ReleaseType}" FontSize="11" Foreground="White"/>
+                        </Border>
+                        <Border Background="#C0392B" CornerRadius="4" Padding="4,2" Visibility="{Binding SupportPhase, Converter={StaticResource StringEqualsToVisibilityConverter}, ConverterParameter=eol}">
+                          <TextBlock Text="EOL" FontSize="11" Foreground="White"/>
+                        </Border>
+                        <Border Background="#7F8C8D" CornerRadius="4" Padding="4,2" Visibility="{Binding EolDisplay, Converter={StaticResource NullToVisibilityConverter}}">
+                          <TextBlock Text="{Binding EolDisplay}" FontSize="11" Foreground="White"/>
+                        </Border>
+                        <Border Background="#8A6D1A" CornerRadius="4" Padding="4,2" Visibility="{Binding SupportPhase, Converter={StaticResource StringEqualsToVisibilityConverter}, ConverterParameter=maintenance}">
+                          <TextBlock Text="Maintenance" FontSize="11" Foreground="White"/>
+                        </Border>
+                        <Border Background="#1F6F50" CornerRadius="4" Padding="4,2" Visibility="{Binding SupportPhase, Converter={StaticResource StringEqualsToVisibilityConverter}, ConverterParameter=active}">
+                          <TextBlock Text="Active" FontSize="11" Foreground="White"/>
+                        </Border>
+                        <Border Background="#75507B" CornerRadius="4" Padding="4,2" Visibility="{Binding SupportPhase, Converter={StaticResource StringEqualsToVisibilityConverter}, ConverterParameter=preview}">
+                          <TextBlock Text="Preview" FontSize="11" Foreground="White"/>
+                        </Border>
+                        </StackPanel>
+                      </Border>
+                    </ToggleButton>
+                    <Grid Margin="4,4,4,0" Visibility="{Binding IsChecked, ElementName=GroupToggle, Converter={StaticResource BoolToVisibilityConverter}}">
+                      <ListView ItemsSource="{Binding Items}" ItemTemplate="{StaticResource InstallEntryTemplate}" SelectionMode="None"/>
+                    </Grid>
+                  </StackPanel>
+                </DataTemplate>
+              </ItemsControl.ItemTemplate>
+            </ItemsControl>
+          </StackPanel>
+        </ScrollViewer>
       </PivotItem>
       <PivotItem Header="Settings">
         <StackPanel Spacing="8" Padding="12">

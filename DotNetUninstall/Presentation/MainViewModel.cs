@@ -20,6 +20,8 @@ public partial class MainViewModel : ObservableObject
 
     public ObservableCollection<DotnetInstallEntry> SdkItems { get; } = new();
     public ObservableCollection<DotnetInstallEntry> RuntimeItems { get; } = new();
+    public ObservableCollection<ChannelGroup> GroupedSdkItems { get; } = new();
+    public ObservableCollection<ChannelGroup> GroupedRuntimeItems { get; } = new();
     public int SdkCount => SdkItems.Count;
     public int RuntimeCount => RuntimeItems.Count;
     public int TotalCount => SdkItems.Count + RuntimeItems.Count;
@@ -100,6 +102,7 @@ public partial class MainViewModel : ObservableObject
             {
                 await ListFromToolAsync();
             }
+            BuildGroups();
             StatusMessage = $"Loaded {TotalCount} entries.";
         }
         catch (Exception ex)
@@ -199,7 +202,7 @@ public partial class MainViewModel : ObservableObject
         var sdkHeader = new Regex(@"^\.NET (Core )?SDKs:?", RegexOptions.IgnoreCase);
         var rtHeader = new Regex(@"^\.NET (Core )?Runtimes:?", RegexOptions.IgnoreCase);
         var entryRx = new Regex(@"^(?<ver>[0-9A-Za-z\.-]+)\s+\((?<arch>[^)]+)\)(?:\s+\[(?<reason>[^]]+)\])?\s*$");
-        int sdkCount = 0, rtCount = 0;
+        var parsed = new List<DotnetInstallEntry>();
         foreach (var raw in lines)
         {
             var line = raw.TrimEnd();
@@ -215,19 +218,178 @@ public partial class MainViewModel : ObservableObject
             var arch = m.Groups["arch"].Value;
             var reason = m.Groups["reason"].Success ? m.Groups["reason"].Value : null;
             bool canUninstall = string.IsNullOrEmpty(reason) || !reason.Contains("Cannot uninstall", StringComparison.OrdinalIgnoreCase);
-            var entry = new DotnetInstallEntry(section, section, version, arch, canUninstall && HasUninstallTool, reason);
-            if (section == "sdk")
+            parsed.Add(new DotnetInstallEntry(section, section, version, arch, canUninstall && HasUninstallTool, reason));
+        }
+
+        // Prepare metadata before adding to observable collections
+        try
+        {
+            var neededChannels = new HashSet<string>(parsed.Select(p => DeriveChannel(p.Version)), StringComparer.OrdinalIgnoreCase);
+            if (neededChannels.Count > 0)
             {
-                SdkItems.Add(entry);
+                await EnsureMetadataAsync(neededChannels);
+            }
+        }
+        catch (Exception ex)
+        {
+            StatusMessage = (StatusMessage ?? "") + $" (Metadata fetch failed: {ex.Message})";
+        }
+
+        int sdkCount = 0, rtCount = 0;
+        foreach (var baseEntry in parsed)
+        {
+            DotnetInstallEntry finalEntry = baseEntry;
+            try
+            {
+                var channel = DeriveChannel(baseEntry.Version);
+                ChannelResolved? meta = null;
+                if (_channelCache != null)
+                {
+                    _channelCache.TryGetValue(channel, out meta);
+                }
+                var previewKind = DerivePreviewKind(baseEntry.Version);
+                bool isPreview = previewKind != "ga";
+                bool outOfSupport = meta != null && (meta.SupportPhase == "eol" || (meta.EolDate.HasValue && meta.EolDate.Value < DateTime.UtcNow.Date));
+                bool isSecurity = meta != null && ((baseEntry.Type == "sdk" && meta.SecurityVersions.Contains(baseEntry.Version)) || (baseEntry.Type == "runtime" && meta.SecurityVersions.Contains(baseEntry.Version)));
+                finalEntry = baseEntry with
+                {
+                    Channel = channel,
+                    ReleaseType = meta?.ReleaseType?.ToUpperInvariant(),
+                    SupportPhase = meta?.SupportPhase,
+                    IsOutOfSupport = outOfSupport,
+                    PreviewKind = previewKind,
+                    IsPreview = isPreview,
+                    IsSecurityUpdate = isSecurity,
+                    EolDate = meta?.EolDate
+                };
+            }
+            catch { }
+
+            if (finalEntry.Type == "sdk")
+            {
+                SdkItems.Add(finalEntry);
+                sdkCount++;
             }
             else
             {
-                RuntimeItems.Add(entry);
+                RuntimeItems.Add(finalEntry);
+                rtCount++;
             }
-            if (section == "sdk") sdkCount++; else rtCount++;
         }
         StatusMessage = $"SDKs: {sdkCount}, Runtimes: {rtCount}";
     }
+
+    private static readonly Uri ReleaseMetadataIndex = new("https://builds.dotnet.microsoft.com/dotnet/release-metadata/releases-index.json");
+
+    // Real schema (subset) for releases-index.json
+    private sealed class ReleasesIndexRoot { public List<ChannelInfo>? ReleasesIndex { get; set; } }
+    private sealed class ChannelInfo
+    {
+        public string? ChannelVersion { get; set; }
+        public string? ReleaseType { get; set; }      // lts | sts
+        public string? SupportPhase { get; set; }     // preview | go-live | active | maintenance | eol
+        public DateTime? EolDate { get; set; }
+        public string? ReleasesJson { get; set; }
+    }
+    // Per-channel releases.json subset
+    private sealed class ChannelReleases { public List<ChannelRelease>? Releases { get; set; } }
+    private sealed class ChannelRelease
+    {
+        public string? ReleaseVersion { get; set; }
+        public bool? Security { get; set; }
+        public SdkRelease? Sdk { get; set; }
+        public List<SdkRelease>? Sdks { get; set; }
+        public RuntimeRelease? Runtime { get; set; }
+    }
+    private sealed class SdkRelease { public string? Version { get; set; } }
+    private sealed class RuntimeRelease { public string? Version { get; set; } }
+
+    // Simple in-memory cache (lifetime of process)
+    private static DateTime _metaCacheTime = DateTime.MinValue;
+    private static Dictionary<string, ChannelResolved>? _channelCache; // key = channel
+    private sealed class ChannelResolved
+    {
+        public string? ReleaseType { get; set; }
+        public string? SupportPhase { get; set; }
+        public DateTime? EolDate { get; set; }
+        public HashSet<string> SdkVersions { get; } = new(StringComparer.OrdinalIgnoreCase);
+        public HashSet<string> RuntimeVersions { get; } = new(StringComparer.OrdinalIgnoreCase);
+        public HashSet<string> SecurityVersions { get; } = new(StringComparer.OrdinalIgnoreCase);
+    }
+
+    private static string DeriveChannel(string version)
+    {
+        // Take first two numeric segments; fallback to first segment if only one.
+        var parts = version.Split('.', StringSplitOptions.RemoveEmptyEntries);
+        if (parts.Length >= 2 && int.TryParse(parts[0], out _) && int.TryParse(parts[1], out _)) return parts[0] + "." + parts[1];
+        if (parts.Length >= 1) return parts[0];
+        return version;
+    }
+
+    private static string DerivePreviewKind(string version)
+    {
+        var v = version.ToLowerInvariant();
+        if (v.Contains("-preview.")) return "preview";
+        if (v.Contains("-rc.")) return "rc";
+        return "ga";
+    }
+
+    private async Task EnsureMetadataAsync(HashSet<string> neededChannels)
+    {
+        // Refresh cache every 12 hours
+        if (_channelCache != null && (DateTime.UtcNow - _metaCacheTime) < TimeSpan.FromHours(12))
+        {
+            // If cache already contains all needed channels, we are done
+            if (neededChannels.All(c => _channelCache.ContainsKey(c))) return;
+        }
+
+        _channelCache ??= new();
+        using var http = new HttpClient();
+        ReleasesIndexRoot? indexRoot;
+        using (var s = await http.GetStreamAsync(ReleaseMetadataIndex))
+        {
+            indexRoot = await JsonSerializer.DeserializeAsync<ReleasesIndexRoot>(s, new JsonSerializerOptions(JsonSerializerDefaults.Web));
+        }
+        if (indexRoot?.ReleasesIndex == null) return;
+
+        var indexLookup = indexRoot.ReleasesIndex
+            .Where(c => !string.IsNullOrWhiteSpace(c.ChannelVersion))
+            .ToDictionary(c => c.ChannelVersion!, StringComparer.OrdinalIgnoreCase);
+
+        foreach (var ch in neededChannels)
+        {
+            if (_channelCache.ContainsKey(ch)) continue; // already cached
+            if (!indexLookup.TryGetValue(ch, out var ci) || string.IsNullOrWhiteSpace(ci.ReleasesJson)) continue;
+            try
+            {
+                using var rs = await http.GetStreamAsync(ci.ReleasesJson);
+                var rels = await JsonSerializer.DeserializeAsync<ChannelReleases>(rs, new JsonSerializerOptions(JsonSerializerDefaults.Web));
+                var resolved = new ChannelResolved
+                {
+                    ReleaseType = ci.ReleaseType?.ToLowerInvariant(),
+                    SupportPhase = ci.SupportPhase?.ToLowerInvariant(),
+                    EolDate = ci.EolDate?.Date
+                };
+                if (rels?.Releases != null)
+                {
+                    foreach (var r in rels.Releases)
+                    {
+                        bool sec = r.Security == true;
+                        void AddSdk(string? v) { if (!string.IsNullOrWhiteSpace(v)) { resolved.SdkVersions.Add(v); if (sec) resolved.SecurityVersions.Add(v); } }
+                        void AddRuntime(string? v) { if (!string.IsNullOrWhiteSpace(v)) { resolved.RuntimeVersions.Add(v); if (sec) resolved.SecurityVersions.Add(v); } }
+                        if (r.Sdk?.Version != null) AddSdk(r.Sdk.Version);
+                        if (r.Sdks != null) foreach (var srel in r.Sdks) AddSdk(srel.Version);
+                        if (r.Runtime?.Version != null) AddRuntime(r.Runtime.Version);
+                    }
+                }
+                _channelCache[ch] = resolved;
+            }
+            catch { /* ignore per-channel errors */ }
+        }
+        _metaCacheTime = DateTime.UtcNow;
+    }
+
+    // TagEntriesAsync removed; tagging now performed during initial list parsing for better Uno binding behavior.
 
     private async Task UninstallAsync(DotnetInstallEntry? entry)
     {
@@ -317,6 +479,7 @@ public partial class MainViewModel : ObservableObject
         SdkItems.Clear();
         RuntimeItems.Clear();
         await ListFromToolAsync();
+        BuildGroups();
         StatusMessage = $"Loaded {TotalCount} entries.";
     }
 
@@ -342,6 +505,44 @@ public partial class MainViewModel : ObservableObject
         proc.BeginOutputReadLine();
         proc.BeginErrorReadLine();
         return await tcs.Task.ConfigureAwait(false);
+    }
+
+    private void BuildGroups()
+    {
+        GroupedSdkItems.Clear();
+        GroupedRuntimeItems.Clear();
+        static (int major, int minor) ParseChannel(string? channel)
+        {
+            if (string.IsNullOrWhiteSpace(channel)) return (-1, -1);
+            var parts = channel.Split('.', StringSplitOptions.RemoveEmptyEntries);
+            int major = -1, minor = -1;
+            if (parts.Length > 0) int.TryParse(parts[0], out major);
+            if (parts.Length > 1) int.TryParse(parts[1], out minor);
+            return (major, minor);
+        }
+        IOrderedEnumerable<IGrouping<string?, DotnetInstallEntry>> OrderGroups(IEnumerable<IGrouping<string?, DotnetInstallEntry>> groups)
+            => groups.OrderByDescending(g => ParseChannel(g.Key).major)
+                     .ThenByDescending(g => ParseChannel(g.Key).minor);
+        if (SdkItems.Count > 0)
+        {
+            foreach (var grp in OrderGroups(SdkItems.GroupBy(i => i.Channel ?? DeriveChannel(i.Version))))
+            {
+                var first = grp.FirstOrDefault();
+                var rt = first?.ReleaseType?.ToUpperInvariant();
+                GroupedSdkItems.Add(new ChannelGroup(grp.Key!, grp, rt, first?.SupportPhase, first?.EolDate));
+            }
+        }
+        if (RuntimeItems.Count > 0)
+        {
+            foreach (var grp in OrderGroups(RuntimeItems.GroupBy(i => i.Channel ?? DeriveChannel(i.Version))))
+            {
+                var first = grp.FirstOrDefault();
+                var rt2 = first?.ReleaseType?.ToUpperInvariant();
+                GroupedRuntimeItems.Add(new ChannelGroup(grp.Key!, grp, rt2, first?.SupportPhase, first?.EolDate));
+            }
+        }
+        OnPropertyChanged(nameof(GroupedSdkItems));
+        OnPropertyChanged(nameof(GroupedRuntimeItems));
     }
 
     private static string GetUserConfigFile()

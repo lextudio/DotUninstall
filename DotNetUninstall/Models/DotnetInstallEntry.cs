@@ -8,3 +8,16 @@ public partial record DotnetInstallEntry(
     bool CanUninstall,
     string? Reason        // null if uninstallable, else reason message
 );
+
+// Extended metadata (populated after initial discovery via Microsoft release metadata service)
+public partial record DotnetInstallEntry
+{
+    public string? Channel { get; init; }          // e.g. "8.0", "9.0"
+    public string? SupportPhase { get; init; }     // lts | sts | preview | eol | ga | unknown
+    public bool IsPreview { get; init; }
+    public bool IsOutOfSupport { get; init; }
+    public string? ReleaseType { get; init; }       // lts | sts
+    public string? PreviewKind { get; init; }       // preview | rc | ga
+    public bool IsSecurityUpdate { get; init; }
+    public DateTime? EolDate { get; init; }         // official end of life (channel) if provided
+}
