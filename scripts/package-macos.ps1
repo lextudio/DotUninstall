@@ -41,7 +41,7 @@ function Step($m){ Write-Host "[STEP] $m" -ForegroundColor Cyan }
 function Info($m){ Write-Host "[INFO] $m" -ForegroundColor DarkGray }
 function Warn($m){ Write-Host "[WARN] $m" -ForegroundColor Yellow }
 
-$Project = 'DotNetUninstall/DotNetUninstall.csproj'
+$Project = Join-Path $PSScriptRoot '../DotNetUninstall/DotNetUninstall.csproj'
 if (-not (Test-Path $Project)) { throw "Project file not found: $Project" }
 
 if (-not $Version) {
@@ -50,6 +50,8 @@ if (-not $Version) {
 }
 
 $Artifacts = Join-Path (Get-Location) 'artifacts'
+$ReleaseOut = Join-Path $Artifacts 'release'
+New-Item -ItemType Directory -Force -Path $ReleaseOut | Out-Null
 $OutRoot   = Join-Path $Artifacts 'publish'
 Remove-Item $OutRoot -Recurse -Force -ErrorAction SilentlyContinue | Out-Null
 New-Item -ItemType Directory -Force -Path $OutRoot | Out-Null
@@ -90,8 +92,8 @@ if ($Dmg) {
     Copy-Item $b.Path (Join-Path $Stage $dest) -Recurse
   }
   if (Test-Path LICENSE) { Copy-Item LICENSE $Stage }
-  $dmgName = "DotNetUninstallToolUI-macOS-$Version.dmg"
-  $dmgPath = Join-Path $Artifacts $dmgName
+  $dmgName = "dotnet-uninstall-ui-macos-$Version.dmg"
+  $dmgPath = Join-Path $ReleaseOut $dmgName
   Step "Creating DMG: $dmgPath"
   & hdiutil create -volname 'DotNetUninstallToolUI' -srcfolder $Stage -ov -format UDZO $dmgPath | Out-Null
   Info "DMG created: $dmgPath"
