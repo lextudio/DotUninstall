@@ -1,0 +1,3 @@
+[submodule "external/cli-lab"]
+	path = external/cli-lab
+	url = https://github.com/dotnet/cli-lab.git

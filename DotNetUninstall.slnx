@@ -1,4 +1,5 @@
 <?xml version="1.0" encoding="utf-8"?>
 <Solution>
   <Project Path="DotNetUninstall/DotNetUninstall.csproj" />
+  <Project Path="Tooling/UninstallTooling.csproj" />
 </Solution>

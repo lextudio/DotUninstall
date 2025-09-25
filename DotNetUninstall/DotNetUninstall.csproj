@@ -42,6 +42,10 @@
     <PackageReference Include="NuGet.Versioning" />
   </ItemGroup>
 
+  <ItemGroup>
+    <ProjectReference Include="..\Tooling\UninstallTooling.csproj" />
+  </ItemGroup>
+
   <PropertyGroup Condition="'$(Configuration)'=='Debug' or '$(IsUiAutomationMappingEnabled)'=='True'">
     <IsUiAutomationMappingEnabled>True</IsUiAutomationMappingEnabled>
     <DefineConstants>$(DefineConstants);USE_UITESTS</DefineConstants>

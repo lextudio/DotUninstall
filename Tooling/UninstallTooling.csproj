@@ -1,0 +1,42 @@
+<Project Sdk="Microsoft.NET.Sdk">
+  <PropertyGroup>
+    <TargetFramework>net9.0</TargetFramework>
+    <ImplicitUsings>enable</ImplicitUsings>
+    <Nullable>enable</Nullable>
+    <AssemblyName>DotNetUninstall.Tooling</AssemblyName>
+    <RootNamespace>DotNetUninstall.Tooling</RootNamespace>
+  </PropertyGroup>
+
+  <!-- Link in the necessary source files from the submodule (excluding Program.cs) -->
+  <ItemGroup>
+  <!-- Use full shared source set to avoid missing dependency types -->
+  <Compile Include="../external/cli-lab/src/dotnet-core-uninstall/Shared/**/*.cs" />
+  <!-- Exclude Commands, Configs, Filterers (command-line parsing) -->
+    <Compile Include="../external/cli-lab/src/dotnet-core-uninstall/MacOs/**/*.cs" />
+    <Compile Include="../external/cli-lab/src/dotnet-core-uninstall/Windows/**/*.cs" />
+    <!-- Localizable strings: preserve original resource base name 'Microsoft.DotNet.Tools.Uninstall.LocalizableStrings' -->
+    <Compile Include="../external/cli-lab/src/dotnet-core-uninstall/LocalizableStrings.Designer.cs">
+      <DesignTime>True</DesignTime>
+      <AutoGen>True</AutoGen>
+      <DependentUpon>LocalizableStrings.resx</DependentUpon>
+    </Compile>
+    <EmbeddedResource Include="../external/cli-lab/src/dotnet-core-uninstall/LocalizableStrings.resx">
+      <Generator>ResXFileCodeGenerator</Generator>
+      <LastGenOutput>LocalizableStrings.Designer.cs</LastGenOutput>
+      <LogicalName>Microsoft.DotNet.Tools.Uninstall.LocalizableStrings.resources</LogicalName>
+    </EmbeddedResource>
+    <!-- Exclude the CLI entrypoint -->
+    <Compile Remove="../external/cli-lab/src/dotnet-core-uninstall/Program.cs" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <PackageReference Include="NuGet.Versioning" />
+  <PackageReference Include="System.CommandLine" />
+  <PackageReference Include="System.CommandLine.Rendering" />
+  <PackageReference Include="System.Resources.Extensions" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <ProjectReference Include="../DotNetUninstall/DotNetUninstall.csproj" Condition="false" />
+  </ItemGroup>
+</Project>

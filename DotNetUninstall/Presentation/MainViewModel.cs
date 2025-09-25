@@ -36,17 +36,18 @@ public partial class MainViewModel : ObservableObject
     [ObservableProperty]
     private string? errorMessage;
 
+    // Legacy properties retained for minimal XAML changes but now constant
     [ObservableProperty]
-    private bool hasUninstallTool;
+    private bool hasUninstallTool = true; // Always true: using embedded logic
 
     [ObservableProperty]
-    private string? uninstallToolPath;
+    private string? uninstallToolPath; // Unused
 
     [ObservableProperty]
-    private string? uninstallToolVersion;
+    private string? uninstallToolVersion; // Unused
 
     [ObservableProperty]
-    private string? suggestedDownload;
+    private string? suggestedDownload; // Unused
 
     public IAsyncRelayCommand RefreshCommand { get; }
     public IAsyncRelayCommand<DotnetInstallEntry> UninstallCommand { get; }
@@ -71,13 +72,7 @@ public partial class MainViewModel : ObservableObject
             OnPropertyChanged(nameof(RuntimeCount));
             OnPropertyChanged(nameof(TotalCount));
         };
-        // Load persisted path first (env var takes precedence if present)
-        var persisted = LoadPersistedToolPath();
-        UninstallToolPath = Environment.GetEnvironmentVariable("DOTNET_UNINSTALL_TOOL")?.Trim();
-        if (string.IsNullOrWhiteSpace(UninstallToolPath))
-        {
-            UninstallToolPath = persisted;
-        }
+        // External tool path no longer required.
     }
 
     public async Task RefreshAsync()
@@ -90,19 +85,7 @@ public partial class MainViewModel : ObservableObject
         RuntimeItems.Clear();
         try
         {
-            await DetectToolAsync();
-            if (HasUninstallTool)
-            {
-                await UpdateToolVersionAsync();
-                if (!string.IsNullOrWhiteSpace(UninstallToolVersion))
-                {
-                    StatusMessage = $"Using uninstall tool: {Path.GetFileName(UninstallToolPath)} (v{UninstallToolVersion})";
-                }
-            }
-            if (HasUninstallTool)
-            {
-                await ListFromToolAsync();
-            }
+            await ListFromEmbeddedAsync();
             BuildGroups();
             StatusMessage = $"Loaded {TotalCount} entries.";
         }
@@ -117,55 +100,7 @@ public partial class MainViewModel : ObservableObject
         }
     }
 
-    private Task DetectToolAsync()
-    {
-        // Detection strategy (no global tool):
-        // 1. Use explicitly configured environment variable DOTNET_UNINSTALL_TOOL
-        // 2. Search current working directory and application base directory for a binary named dotnet-core-uninstall or dotnet-core-uninstall.exe
-        // 3. Search common locations (/usr/local/bin, /usr/local/share, ~/.dotnet/tools)
-
-        string? path = UninstallToolPath;
-        if (string.IsNullOrWhiteSpace(path))
-        {
-            var candidates = new List<string>();
-            var fileName = OperatingSystem.IsWindows() ? "dotnet-core-uninstall.exe" : "dotnet-core-uninstall";
-            var baseDir = AppContext.BaseDirectory;
-            var cwd = Directory.GetCurrentDirectory();
-            var home = Environment.GetFolderPath(Environment.SpecialFolder.UserProfile);
-            var potentialDirs = new[]
-            {
-                cwd,
-                baseDir,
-                Path.Combine(home, ".dotnet", "tools"),
-                "/usr/local/bin",
-                "/usr/local/share",
-                "/opt/dotnet-core-uninstall"
-            };
-            foreach (var d in potentialDirs.Distinct())
-            {
-                var full = Path.Combine(d, fileName);
-                if (File.Exists(full)) candidates.Add(full);
-            }
-            path = candidates.FirstOrDefault();
-        }
-
-        if (!string.IsNullOrWhiteSpace(path) && File.Exists(path))
-        {
-            UninstallToolPath = path;
-            HasUninstallTool = true;
-            StatusMessage = $"Using uninstall tool: {Path.GetFileName(path)}";
-            PersistToolPath(path);
-            SuggestedDownload = null;
-        }
-        else
-        {
-            HasUninstallTool = false;
-            StatusMessage = "Uninstall tool not found. Set DOTNET_UNINSTALL_TOOL env var to its path.";
-            SuggestedDownload = BuildSuggestedDownload();
-        }
-        UninstallCommand.NotifyCanExecuteChanged();
-        return Task.CompletedTask;
-    }
+    private Task DetectToolAsync() => Task.CompletedTask; // No-op retained for compatibility
 
     private string BuildSuggestedDownload()
     {
@@ -194,32 +129,24 @@ public partial class MainViewModel : ObservableObject
         }
     }
 
-    private async Task ListFromToolAsync()
+    private async Task ListFromEmbeddedAsync()
     {
-        if (string.IsNullOrWhiteSpace(UninstallToolPath) || !File.Exists(UninstallToolPath)) return;
-        var result = await RunProcessAsync(UninstallToolPath!, "list");
-        var lines = SplitLines(result.stdout);
-        string? section = null; // sdk | runtime
-        var sdkHeader = new Regex(@"^\.NET (Core )?SDKs:?", RegexOptions.IgnoreCase);
-        var rtHeader = new Regex(@"^\.NET (Core )?Runtimes:?", RegexOptions.IgnoreCase);
-        var entryRx = new Regex(@"^(?<ver>[0-9A-Za-z\.-]+)\s+\((?<arch>[^)]+)\)(?:\s+\[(?<reason>[^]]+)\])?\s*$");
         var parsed = new List<DotnetInstallEntry>();
-        foreach (var raw in lines)
+        try
         {
-            var line = raw.TrimEnd();
-            if (string.IsNullOrWhiteSpace(line)) continue;
-            if (sdkHeader.IsMatch(line)) { section = "sdk"; continue; }
-            if (rtHeader.IsMatch(line)) { section = "runtime"; continue; }
-            if (line.StartsWith("This tool", StringComparison.OrdinalIgnoreCase)) continue;
-            if (line.StartsWith("The versions", StringComparison.OrdinalIgnoreCase)) continue;
-            if (section == null) continue;
-            var m = entryRx.Match(line);
-            if (!m.Success) continue;
-            var version = m.Groups["ver"].Value;
-            var arch = m.Groups["arch"].Value;
-            var reason = m.Groups["reason"].Success ? m.Groups["reason"].Value : null;
-            bool canUninstall = string.IsNullOrEmpty(reason) || !reason.Contains("Cannot uninstall", StringComparison.OrdinalIgnoreCase);
-            parsed.Add(new DotnetInstallEntry(section, section, version, arch, canUninstall && HasUninstallTool, reason));
+            var list = DotNetUninstall.Tooling.BundleListing.List();
+            foreach (var e in list)
+            {
+                parsed.Add(new DotnetInstallEntry(e.Type, e.Type, e.Version, e.Architecture, e.CanUninstall, e.Reason)
+                {
+                    UninstallCommand = e.UninstallCommand
+                });
+            }
+        }
+        catch (Exception ex)
+        {
+            ErrorMessage = ex.Message;
+            return;
         }
 
         // Prepare metadata before adding to observable collections
@@ -418,26 +345,20 @@ public partial class MainViewModel : ObservableObject
     private async Task UninstallAsync(DotnetInstallEntry? entry)
     {
         if (entry == null) return;
-        if (!HasUninstallTool)
-        {
-            ErrorMessage = "dotnet-core-uninstall tool not available.";
-            return;
-        }
+        // Internal logic always available
         ErrorMessage = null;
         StatusMessage = $"Uninstalling {entry.Type} {entry.Version}...";
         try
         {
-            if (string.IsNullOrWhiteSpace(UninstallToolPath) || !File.Exists(UninstallToolPath))
+            if (string.IsNullOrWhiteSpace(entry.UninstallCommand)) { ErrorMessage = "Missing uninstall command."; return; }
+            // Simple confirmation: in UI frameworks without dialog support fallback to console; else proceed.
+            if (!await ConfirmAsync($"Are you sure you want to uninstall {entry.Type} {entry.Version}?"))
             {
-                ErrorMessage = "Configured uninstall tool path is invalid.";
+                StatusMessage = "Uninstall canceled.";
                 return;
             }
-            string args = entry.Type == "sdk" ? $"remove --sdk {entry.Version} -y" : $"remove --runtime {entry.Version} -y";
-            var result = await RunProcessAsync(UninstallToolPath!, args);
-            if (result.exitCode != 0)
-            {
-                ErrorMessage = (string.IsNullOrWhiteSpace(result.stderr) ? result.stdout : result.stderr) ?? "Uninstall failed.";
-            }
+            var (success, err) = DotNetUninstall.Tooling.BundleListing.Uninstall(new DotNetUninstall.Tooling.BundleInfoEntry(entry.Type, entry.Version, entry.Architecture, entry.CanUninstall, entry.Reason, entry.Version, entry.UninstallCommand));
+            if (!success) ErrorMessage = err ?? "Uninstall failed.";
         }
         catch (Exception ex)
         {
@@ -447,6 +368,34 @@ public partial class MainViewModel : ObservableObject
         {
             await RefreshAsync();
         }
+    }
+
+    private Task<bool> ConfirmAsync(string message)
+    {
+#if WINDOWS
+        try
+        {
+            var dialog = new Microsoft.UI.Xaml.Controls.ContentDialog
+            {
+                Title = "Confirm Uninstall",
+                Content = message,
+                PrimaryButtonText = "Uninstall",
+                CloseButtonText = "Cancel"
+            };
+            var hwnd = WinRT.Interop.WindowNative.GetWindowHandle(Microsoft.UI.Xaml.Window.Current);
+            WinRT.Interop.InitializeWithWindow.Initialize(dialog, hwnd);
+            var tcs = new TaskCompletionSource<bool>();
+            _ = dialog.ShowAsync().AsTask().ContinueWith(t =>
+            {
+                var result = t.Result == Microsoft.UI.Xaml.Controls.ContentDialogResult.Primary;
+                tcs.TrySetResult(result);
+            });
+            return tcs.Task;
+        }
+        catch { }
+#endif
+        // Fallback immediate approve (could extend with platform-specific dialogs later)
+        return Task.FromResult(true);
     }
 
     private async Task BrowseAsync()
@@ -482,30 +431,7 @@ public partial class MainViewModel : ObservableObject
         }
     }
 
-    private async Task ApplyToolPathAsync()
-    {
-        if (string.IsNullOrWhiteSpace(UninstallToolPath) || !File.Exists(UninstallToolPath))
-        {
-            HasUninstallTool = false;
-            ErrorMessage = "Specified path invalid.";
-            return;
-        }
-        HasUninstallTool = true;
-        ErrorMessage = null;
-        StatusMessage = $"Using uninstall tool: {Path.GetFileName(UninstallToolPath)}";
-        UninstallCommand.NotifyCanExecuteChanged();
-        PersistToolPath(UninstallToolPath!);
-        await UpdateToolVersionAsync();
-        if (!string.IsNullOrWhiteSpace(UninstallToolVersion))
-        {
-            StatusMessage = $"Using uninstall tool: {Path.GetFileName(UninstallToolPath)} (v{UninstallToolVersion})";
-        }
-        SdkItems.Clear();
-        RuntimeItems.Clear();
-        await ListFromToolAsync();
-        BuildGroups();
-        StatusMessage = $"Loaded {TotalCount} entries.";
-    }
+    private Task ApplyToolPathAsync() => Task.CompletedTask; // No-op
 
     private static string[] SplitLines(string text) => text
         .Split(new[] { '\r', '\n' }, StringSplitOptions.RemoveEmptyEntries | StringSplitOptions.TrimEntries);
@@ -609,29 +535,5 @@ public partial class MainViewModel : ObservableObject
         public string? UninstallToolPath { get; set; }
     }
 
-    private async Task UpdateToolVersionAsync()
-    {
-        UninstallToolVersion = null;
-        if (string.IsNullOrWhiteSpace(UninstallToolPath) || !File.Exists(UninstallToolPath)) return;
-        try
-        {
-            var result = await RunProcessAsync(UninstallToolPath!, "--version");
-            if (result.exitCode == 0)
-            {
-                var stdout = (result.stdout ?? string.Empty).Trim();
-                if (!string.IsNullOrWhiteSpace(stdout))
-                {
-                    // Use first non-empty line
-                    var line = stdout.Split('\n').Select(l => l.Trim()).FirstOrDefault(l => !string.IsNullOrWhiteSpace(l));
-                    if (!string.IsNullOrWhiteSpace(line))
-                    {
-                        // Extract version-like token (digits + dots + optional prerelease)
-                        var match = System.Text.RegularExpressions.Regex.Match(line, @"[0-9]+(\.[0-9]+){1,3}(-[0-9A-Za-z\.]+)?");
-                        UninstallToolVersion = match.Success ? match.Value : line;
-                    }
-                }
-            }
-        }
-        catch { }
-    }
+    private Task UpdateToolVersionAsync() => Task.CompletedTask; // No-op
 }

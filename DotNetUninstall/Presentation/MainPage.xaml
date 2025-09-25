@@ -165,65 +165,24 @@
         </ScrollViewer>
       </PivotItem>
       <PivotItem Header="Settings">
-        <StackPanel Padding="12" Spacing="8">
-          <StackPanel
-            VerticalAlignment="Center"
-            Orientation="Horizontal"
-            Spacing="8">
+        <StackPanel Padding="12" Spacing="12">
+          <StackPanel Orientation="Horizontal" Spacing="8" VerticalAlignment="Center">
             <Button Command="{Binding RefreshCommand}" Content="Refresh" />
-            <ProgressRing
-              Width="24"
-              Height="24"
-              IsActive="{Binding IsLoading}" />
-            <TextBlock
-              Margin="8,0,0,0"
-              VerticalAlignment="Center"
-              Text="{Binding StatusMessage}" />
+            <ProgressRing Width="24" Height="24" IsActive="{Binding IsLoading}" />
+            <TextBlock Margin="8,0,0,0" VerticalAlignment="Center" Text="{Binding StatusMessage}" />
           </StackPanel>
-          <StackPanel
-            VerticalAlignment="Center"
-            Orientation="Horizontal"
-            Spacing="4">
-            <TextBlock VerticalAlignment="Center" Text="Tool:" />
-            <TextBox Width="320" Text="{Binding UninstallToolPath, Mode=TwoWay}" />
-            <Button Command="{Binding BrowseCommand}" Content="Browse" />
-            <TextBlock
-              Margin="12,0,0,0"
-              VerticalAlignment="Center"
-              FontSize="11"
-              Opacity="0.6"
-              Visibility="{Binding UninstallToolVersion, Converter={StaticResource NullToVisibilityConverter}}">
-              <Run Text="ver " /><Run Text="{Binding UninstallToolVersion}" />
-            </TextBlock>
-          </StackPanel>
-          <StackPanel
-            Padding="8"
-            Background="#22000000"
-            CornerRadius="6"
-            Spacing="6"
-            Visibility="{Binding HasUninstallTool, Converter={StaticResource InverseBoolToVisibilityConverter}}">
-            <TextBlock FontWeight="Bold" Text="dotnet-core-uninstall tool not detected." />
-            <TextBlock TextWrapping="WrapWholeWords">
-              <Run Text="Download from " />
-              <Hyperlink NavigateUri="https://github.com/dotnet/cli-lab/releases">
-                <Run Text="GitHub Releases" />
-              </Hyperlink>
-              <Run Text=" and select the package matching your OS/architecture below:" />
-            </TextBlock>
-            <TextBlock FontSize="12" Text="Suggested download:" />
-            <TextBlock
-              FontSize="12"
-              FontWeight="SemiBold"
-              Text="{Binding SuggestedDownload}" />
-            <TextBlock
-              FontSize="11"
-              Opacity="0.7"
-              Text="After download, set DOTNET_UNINSTALL_TOOL env var or browse to the executable." />
-          </StackPanel>
-          <TextBlock
-            Foreground="Red"
-            Text="{Binding ErrorMessage}"
-            TextWrapping="WrapWholeWords" />
+          <Border Background="#22000000" CornerRadius="6" Padding="12" >
+            <StackPanel Spacing="4">
+              <TextBlock FontWeight="Bold" Text="Embedded uninstall logic active" />
+              <TextBlock FontSize="12" Opacity="0.85" TextWrapping="WrapWholeWords">
+                This application now performs discovery and uninstall operations directly without invoking the external 'dotnet-core-uninstall' CLI. A confirmation dialog will appear before removal.
+              </TextBlock>
+              <TextBlock FontSize="10" Opacity="0.6" TextWrapping="WrapWholeWords">
+                Tip: If an uninstall fails due to permissions, relaunch this app with elevated privileges (Administrator on Windows or via sudo on macOS) and try again.
+              </TextBlock>
+            </StackPanel>
+          </Border>
+          <TextBlock Foreground="Red" Text="{Binding ErrorMessage}" TextWrapping="WrapWholeWords" />
         </StackPanel>
       </PivotItem>
     </Pivot>
