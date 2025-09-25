@@ -1,15 +1,15 @@
 using System.Collections.ObjectModel;
-using System.Diagnostics;
-using System.Text.RegularExpressions;
 using System.Collections.Specialized;
-using System.Text.Json;
-using NuGet.Versioning;
+using System.Diagnostics;
 using System.Runtime.InteropServices;
+using System.Text.Json;
+using System.Text.RegularExpressions;
 using CommunityToolkit.Mvvm.ComponentModel;
 using CommunityToolkit.Mvvm.Input;
 using DotNetUninstall.Models;
 using Microsoft.Extensions.Localization;
 using Microsoft.Extensions.Options;
+using NuGet.Versioning;
 using Uno.Extensions.Navigation;
 using Windows.Foundation.Metadata;
 
