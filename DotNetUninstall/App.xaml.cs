@@ -55,8 +55,8 @@ public partial class App : Application
                     //// Debug JS interop
                     //logBuilder.WebAssemblyLogLevel(LogLevel.Debug);
 
-                }, enableUnoLogging: true)
-                .UseSerilog(consoleLoggingEnabled: true, fileLoggingEnabled: true)
+                }, enableUnoLogging: false)
+                //.UseSerilog(consoleLoggingEnabled: true, fileLoggingEnabled: true)
                 .UseConfiguration(configure: configBuilder =>
                     configBuilder
                         .EmbeddedSource<App>()
