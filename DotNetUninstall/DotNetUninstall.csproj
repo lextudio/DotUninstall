@@ -3,12 +3,13 @@
     <TargetFramework>net9.0-desktop</TargetFramework>
 
     <OutputType>Exe</OutputType>
+    <OutputType Condition=" '$(RuntimeIdentifier)' != '' and $(RuntimeIdentifier.StartsWith('win-')) ">WinExe</OutputType>
     <UnoSingleProject>true</UnoSingleProject>
 
     <!-- Display name -->
-    <ApplicationTitle>DotNet Uninstall Tool UI</ApplicationTitle>
+    <ApplicationTitle>DotUninstall</ApplicationTitle>
     <!-- App Identifier -->
-    <ApplicationId>com.lextudio.dotnetuninstallui</ApplicationId>
+    <ApplicationId>com.lextudio.dotuninstall</ApplicationId>
     <!-- Versions -->
     <ApplicationDisplayVersion>1.0</ApplicationDisplayVersion>
     <ApplicationVersion>1</ApplicationVersion>
@@ -16,8 +17,8 @@
     <ApplicationPublisher>lextudio</ApplicationPublisher>
     <!-- Package Description -->
     <Description>UI for Microsoft's dotnet-core-uninstall utility powered by Uno Platform.</Description>
-  <!-- Windows executable icon (generated via scripts/generate-icons.ps1) -->
-  <ApplicationIcon Condition="Exists('Assets/Images/app.ico')">Assets/Images/app.ico</ApplicationIcon>
+    <!-- Windows executable icon (generated via scripts/generate-icons.ps1) -->
+    <ApplicationIcon Condition="Exists('Assets/Images/app.ico')">Assets/Images/app.ico</ApplicationIcon>
 
     <!--
       UnoFeatures let's you quickly add and manage implicit package references based on the features you want to use.

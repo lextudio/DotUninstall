@@ -9,9 +9,9 @@
 
   <!-- Link in the necessary source files from the submodule (excluding Program.cs) -->
   <ItemGroup>
-  <!-- Use full shared source set to avoid missing dependency types -->
-  <Compile Include="../external/cli-lab/src/dotnet-core-uninstall/Shared/**/*.cs" />
-  <!-- Exclude Commands, Configs, Filterers (command-line parsing) -->
+    <!-- Use full shared source set to avoid missing dependency types -->
+    <Compile Include="../external/cli-lab/src/dotnet-core-uninstall/Shared/**/*.cs" />
+    <!-- Exclude Commands, Configs, Filterers (command-line parsing) -->
     <Compile Include="../external/cli-lab/src/dotnet-core-uninstall/MacOs/**/*.cs" />
     <Compile Include="../external/cli-lab/src/dotnet-core-uninstall/Windows/**/*.cs" />
     <!-- Localizable strings: preserve original resource base name 'Microsoft.DotNet.Tools.Uninstall.LocalizableStrings' -->
@@ -31,12 +31,8 @@
 
   <ItemGroup>
     <PackageReference Include="NuGet.Versioning" />
-  <PackageReference Include="System.CommandLine" />
-  <PackageReference Include="System.CommandLine.Rendering" />
-  <PackageReference Include="System.Resources.Extensions" />
-  </ItemGroup>
-
-  <ItemGroup>
-    <ProjectReference Include="../DotNetUninstall/DotNetUninstall.csproj" Condition="false" />
+    <PackageReference Include="System.CommandLine" />
+    <PackageReference Include="System.CommandLine.Rendering" />
+    <PackageReference Include="System.Resources.Extensions" />
   </ItemGroup>
 </Project>
