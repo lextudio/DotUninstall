@@ -18,5 +18,7 @@
   <PackageVersion Include="System.Resources.Extensions" Version="8.0.0" />
     <PackageVersion Include="Uno.UITest.Helpers" Version="1.1.0-dev.70" />
     <PackageVersion Include="Xamarin.UITest" Version="4.3.4" />
+    <!-- Added for macOS root/sudo detection using Unix Syscalls -->
+    <PackageVersion Include="Mono.Posix" Version="7.1.0-final.1.21458.1" />
   </ItemGroup>
 </Project>

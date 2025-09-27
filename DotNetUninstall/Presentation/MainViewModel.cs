@@ -12,6 +12,7 @@ using Microsoft.Extensions.Options;
 using NuGet.Versioning;
 using Uno.Extensions.Navigation;
 using Windows.Foundation.Metadata;
+using Mono.Unix.Native; // Mono.Posix for elevation detection
 
 namespace DotNetUninstall.Presentation;
 
@@ -26,6 +27,22 @@ public partial class MainViewModel : ObservableObject
     public int SdkCount => SdkItems.Count;
     public int RuntimeCount => RuntimeItems.Count;
     public int TotalCount => SdkItems.Count + RuntimeItems.Count;
+
+    // Elevation (sudo/root) detection on macOS
+    [ObservableProperty]
+    private bool isElevated; // True when effective UID == 0 (macOS/Linux)
+
+    [ObservableProperty]
+    private string? originalUser; // SUDO_USER or current user when elevated
+
+    [ObservableProperty]
+    private bool showElevationWarning; // Controls visibility of the banner
+
+    [ObservableProperty]
+    private bool showElevationOffer; // Shown when NOT elevated on macOS
+
+    public bool CanPerformUninstalls
+        => !OperatingSystem.IsMacOS() || IsElevated; // On macOS require elevation
 
     [ObservableProperty]
     private bool isLoading;
@@ -73,6 +90,7 @@ public partial class MainViewModel : ObservableObject
             OnPropertyChanged(nameof(TotalCount));
         };
         // External tool path no longer required.
+        DetectElevation();
     }
 
     public async Task RefreshAsync()
@@ -538,4 +556,111 @@ public partial class MainViewModel : ObservableObject
     }
 
     private Task UpdateToolVersionAsync() => Task.CompletedTask; // No-op
+
+    private void DetectElevation()
+    {
+        try
+        {
+            if (!OperatingSystem.IsMacOS()) return; // Scope detection to macOS per requirement
+            var euid = Syscall.geteuid();
+            if (euid == 0)
+            {
+                IsElevated = true;
+                OriginalUser = Environment.GetEnvironmentVariable("SUDO_USER") ?? Environment.UserName;
+                ShowElevationWarning = true; // Only show if actually elevated
+                OnPropertyChanged(nameof(CanPerformUninstalls));
+            }
+            else
+            {
+                // Not elevated – offer to restart with privileges
+                ShowElevationOffer = true;
+                OnPropertyChanged(nameof(CanPerformUninstalls));
+            }
+        }
+        catch
+        {
+            // Swallow any unexpected errors; elevation detection is advisory only
+        }
+    }
+
+    [RelayCommand]
+    private void DismissElevationWarning()
+    {
+        ShowElevationWarning = false;
+    }
+
+    [RelayCommand]
+    private async Task ElevateAsync()
+    {
+        try
+        {
+            if (!OperatingSystem.IsMacOS()) return; // Only implemented for macOS right now
+            if (IsElevated) return; // Already elevated
+
+            var exe = Environment.ProcessPath;
+            if (string.IsNullOrWhiteSpace(exe) || !File.Exists(exe)) return;
+
+            // Try to locate enclosing .app bundle root (AppName.app)
+            string launchTarget = exe; // fallback
+            try
+            {
+                var exeDir = Path.GetDirectoryName(exe);
+                // Expect .../Something.app/Contents/MacOS
+                var contentsDir = Directory.GetParent(exeDir ?? string.Empty);
+                var appRoot = contentsDir?.Parent?.FullName;
+                if (!string.IsNullOrWhiteSpace(appRoot) && appRoot.EndsWith(".app", StringComparison.OrdinalIgnoreCase) && Directory.Exists(appRoot))
+                {
+                    launchTarget = appRoot; // Use bundle root
+                }
+            }
+            catch { }
+
+            bool isBundle = launchTarget.EndsWith(".app", StringComparison.OrdinalIgnoreCase);
+            string commandPart;
+            if (isBundle)
+            {
+                // Use 'open' with the bundle so macOS treats it as an app launch.
+                // Using open under administrator privileges will prompt and then start the app root.
+                string escBundle = launchTarget.Replace("'", "'\\''");
+                commandPart = $"open '{escBundle}'";
+            }
+            else
+            {
+                string escExe = launchTarget.Replace("'", "'\\''");
+                commandPart = $"'{escExe}'";
+            }
+
+            var appleScript = $"do shell script \"{commandPart}\" with administrator privileges";
+
+            var psi = new ProcessStartInfo
+            {
+                FileName = "osascript",
+                ArgumentList = { "-e", appleScript },
+                UseShellExecute = false,
+                RedirectStandardOutput = true,
+                RedirectStandardError = true,
+                CreateNoWindow = true
+            };
+            using var proc = Process.Start(psi);
+            if (proc != null)
+            {
+                // Optionally wait a short time to see if launch failed.
+                await Task.Delay(1500);
+                // Exit current (non-elevated) instance so only one UI remains.
+                Environment.Exit(0);
+            }
+        }
+        catch (Exception ex)
+        {
+            // Surface any failure through status / error messages without crashing.
+            ErrorMessage = "Elevation failed: " + ex.Message;
+            ShowElevationOffer = true; // keep banner so user can try again
+        }
+    }
+
+    [RelayCommand]
+    private void DismissElevationOffer()
+    {
+        ShowElevationOffer = false;
+    }
 }

@@ -194,11 +194,70 @@
           Command="{Binding ElementName=RootPage, Path=DataContext.UninstallCommand}"
           CommandParameter="{Binding}"
           Content="Uninstall"
-          IsEnabled="{Binding CanUninstall}" />
+          IsEnabled="{Binding CanUninstall}" Loaded="Button_Loaded" />
       </Grid>
     </DataTemplate>
   </Page.Resources>
   <Grid RowDefinitions="Auto,*,Auto">
+    <!-- Elevation / sudo warning banner (macOS) -->
+    <Border
+      Grid.Row="0"
+      Margin="8,8,8,4"
+      Padding="12"
+      CornerRadius="6"
+      Background="#FFF3CD"
+      BorderBrush="#F8D486"
+      BorderThickness="1"
+      Visibility="{Binding ShowElevationWarning, Converter={StaticResource BoolToVisibilityConverter}}">
+      <StackPanel Orientation="Horizontal" Spacing="12" VerticalAlignment="Center">
+        <TextBlock
+          MaxWidth="640"
+          TextWrapping="WrapWholeWords"
+          Foreground="#664D03"
+          FontSize="12">
+          <Run Text="Running with elevated privileges (root). " />
+          <Run Text="Original user: " />
+          <Run Text="{Binding OriginalUser}" />
+          <Run Text=". Uninstalls may affect the entire system. Proceed with caution." />
+        </TextBlock>
+        <Button
+          Padding="8,4"
+          VerticalAlignment="Center"
+          Content="Dismiss"
+          Command="{Binding DismissElevationWarningCommand}" />
+      </StackPanel>
+    </Border>
+    <!-- Non-elevated offer banner (macOS) -->
+    <Border
+      Grid.Row="0"
+      Margin="8,8,8,4"
+      Padding="12"
+      CornerRadius="6"
+      Background="#E8F4FF"
+      BorderBrush="#B3DAF7"
+      BorderThickness="1"
+      Visibility="{Binding ShowElevationOffer, Converter={StaticResource BoolToVisibilityConverter}}">
+      <StackPanel Orientation="Horizontal" Spacing="12" VerticalAlignment="Center">
+        <TextBlock
+          MaxWidth="640"
+          TextWrapping="WrapWholeWords"
+          Foreground="#0A466E"
+          FontSize="12">
+          <Run Text="Some uninstall operations may require administrator rights. " />
+          <Run Text="You can relaunch this app with elevated privileges." />
+        </TextBlock>
+        <StackPanel Orientation="Horizontal" Spacing="8" VerticalAlignment="Center">
+          <Button
+            Padding="10,4"
+            Content="Relaunch as Administrator"
+            Command="{Binding ElevateCommand}" />
+          <Button
+            Padding="8,4"
+            Content="Dismiss"
+            Command="{Binding DismissElevationOfferCommand}" />
+        </StackPanel>
+      </StackPanel>
+    </Border>
     <Pivot x:Name="MainPivot" Grid.Row="1">
       <PivotItem Header="Runtimes">
         <ScrollViewer>
@@ -222,54 +281,6 @@
           </StackPanel>
         </ScrollViewer>
       </PivotItem>
-      <PivotItem Header="Settings">
-        <StackPanel Padding="12" Spacing="12">
-          <StackPanel
-            VerticalAlignment="Center"
-            Orientation="Horizontal"
-            Spacing="8">
-            <Button Command="{Binding RefreshCommand}" Content="Refresh" />
-            <ProgressRing
-              Width="24"
-              Height="24"
-              IsActive="{Binding IsLoading}" />
-            <TextBlock
-              Margin="8,0,0,0"
-              VerticalAlignment="Center"
-              Text="{Binding StatusMessage}" />
-          </StackPanel>
-          <Border
-            Padding="12"
-            Background="#22000000"
-            CornerRadius="6">
-            <StackPanel Spacing="4">
-              <TextBlock FontWeight="Bold" Text="Embedded uninstall logic active" />
-              <TextBlock
-                FontSize="12"
-                Opacity="0.85"
-                TextWrapping="WrapWholeWords">
-                This application now performs discovery and uninstall operations directly without invoking the external 'dotnet-core-uninstall' CLI. A confirmation dialog will appear before removal.
-              </TextBlock>
-              <TextBlock
-                FontSize="10"
-                Opacity="0.6"
-                TextWrapping="WrapWholeWords">
-                Tip: If an uninstall fails due to permissions, relaunch this app with elevated privileges (Administrator on Windows or via sudo on macOS) and try again.
-              </TextBlock>
-            </StackPanel>
-          </Border>
-          <TextBlock
-            Foreground="Red"
-            Text="{Binding ErrorMessage}"
-            TextWrapping="WrapWholeWords" />
-        </StackPanel>
-      </PivotItem>
     </Pivot>
-    <TextBlock
-      Grid.Row="2"
-      Margin="12,0,12,8"
-      FontSize="10"
-      Opacity="0.6"
-      Text="If an uninstall fails due to permissions, run manually in terminal with elevated rights." />
   </Grid>
 </Page>

@@ -18,7 +18,7 @@ Managing many installed .NET SDK and runtime versions becomes cumbersome. The of
 
 ## Supported Platforms
 
-.NET SDKs/runtimes of supported versions (8+ right now) on Windows/macOS
+.NET SDKs/runtimes of supported versions (8+ right now) on Windows/macOS. Older .NET versions are supported in best-effort mode.
 
 ## Usage
 
@@ -36,9 +36,15 @@ Managing many installed .NET SDK and runtime versions becomes cumbersome. The of
 
 ## macOS Elevation Notes
 
-On macOS you need to run the tool with `sudo` if you installed .NET SDKs/runtimes system-wide (e.g. in `/usr/local/share/dotnet`). The UI does not currently elevate itself yet.
+On macOS you will be prompted to run the tool with `sudo` if you installed .NET SDKs/runtimes system-wide (e.g. in `/usr/local/share/dotnet`).
 
-## Build / Run (Developer)
+## Run
+
+### Prebuilt Binaries
+
+Release binaries are available on the [Releases](https://github.com/lextudio/dotuninstall/releases) page.
+
+### Build from Source
 
 From repository root:
 

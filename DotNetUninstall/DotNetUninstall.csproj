@@ -41,6 +41,7 @@
 
   <ItemGroup>
     <PackageReference Include="NuGet.Versioning" />
+    <PackageReference Include="Mono.Posix" />
   </ItemGroup>
 
   <ItemGroup>
