@@ -62,23 +62,7 @@ if (-not $SkipWindows) {
   & $winScript @winParams | Out-Null
 }
 
-# 3. Generate SHA256 hashes for all artifacts (.exe, .dmg)
-Step 'Generating SHA256 hashes'
-$hashFile = Join-Path $releaseOut 'sha256sums.txt'
-Remove-Item $hashFile -ErrorAction SilentlyContinue
-$targets = Get-ChildItem $releaseOut -File | Where-Object { $_.Name -match '\.(exe|dmg)$' } | Sort-Object Name
-if ($targets.Count -eq 0) {
-  Warn 'No .exe or .dmg artifacts found to hash.'
-} else {
-  foreach ($f in $targets) {
-    $line = (Get-FileHash $f.FullName -Algorithm SHA256).Hash.ToLower() + '  ' + $f.Name
-    $line | Add-Content $hashFile
-  }
-  Info "SHA256 hashes written: $hashFile"
-}
-
-# 4. Summary
+# 3. Summary
 Step 'Summary'
 Get-ChildItem $releaseOut -File | Sort-Object Name | Format-Table Name,Length,LastWriteTime
-Write-Host "Hashes written to: $hashFile" -ForegroundColor Green
 Step 'Done'
