@@ -26,6 +26,9 @@ $artifacts = Join-Path $root 'artifacts'
 $releaseOut = Join-Path $artifacts 'release'
 New-Item -ItemType Directory -Force -Path $releaseOut | Out-Null
 
+# Start fresh: clear previous release artifacts to avoid mixing old and new builds.
+Get-ChildItem -Path $releaseOut -Force -ErrorAction SilentlyContinue | Remove-Item -Recurse -Force -ErrorAction SilentlyContinue
+
 if (-not $SkipMac) {
   Step 'Packaging macOS'
   $macScript = Join-Path $PSScriptRoot 'package-macos.ps1'
@@ -43,10 +46,20 @@ if (-not $SkipMac) {
 if (-not $SkipWindows) {
   Step 'Packaging Windows'
   $winScript = Join-Path $PSScriptRoot 'package-windows.ps1'
-  $winArgs = @('-Configuration', $Configuration)
-  if (-not $SkipSelfContained) { $winArgs += '-SelfContained' }
-  if (-not $SkipTrim) { $winArgs += '-Trim' }
-  & $winScript @winArgs | Out-Null
+  $winParams = @{ Configuration = $Configuration }
+  if (-not $SkipSelfContained) { $winParams.SelfContained = $true }
+  if (-not $SkipTrim) { $winParams.Trim = $true }
+  $WingetManifestsOut = 'winget'
+  if ($WingetManifestsOut) {
+    # If relative, place under artifacts (e.g. artifacts/winget)
+    if (-not [System.IO.Path]::IsPathRooted($WingetManifestsOut)) {
+      $WingetManifestsOut = Join-Path $artifacts $WingetManifestsOut
+    }
+    New-Item -ItemType Directory -Force -Path $WingetManifestsOut | Out-Null
+    $winParams.WingetManifestsOut = $WingetManifestsOut
+    Info "Winget manifests will be generated under: $WingetManifestsOut"
+  }
+  & $winScript @winParams | Out-Null
 }
 
 # 3. Generate SHA256 hashes for all artifacts (.exe, .dmg)

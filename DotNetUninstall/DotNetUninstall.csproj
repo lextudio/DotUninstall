@@ -10,9 +10,12 @@
     <ApplicationTitle>DotUninstall</ApplicationTitle>
     <!-- App Identifier -->
     <ApplicationId>com.lextudio.dotuninstall</ApplicationId>
-    <!-- Versions -->
-    <ApplicationDisplayVersion>1.0</ApplicationDisplayVersion>
-    <ApplicationVersion>1</ApplicationVersion>
+    <!-- Version mapping: Display = Major.Minor ; Internal numeric = Major -->
+    <ApplicationDisplayVersion Condition=" '$(ApplicationDisplayVersion)' == '' and '$(VersionMajor)' != '' and '$(VersionMinor)' != '' ">$(VersionMajor).$(VersionMinor)</ApplicationDisplayVersion>
+    <ApplicationDisplayVersion Condition=" '$(ApplicationDisplayVersion)' == '' ">1.0</ApplicationDisplayVersion>
+    <ApplicationVersion Condition=" '$(ApplicationVersion)' == '' and '$(VersionMajor)' != '' ">$(VersionMajor)</ApplicationVersion>
+    <!-- keep ApplicationVersion numeric (major.minor.patch -> convert to a numeric build, fallback 1) -->
+    <ApplicationVersion Condition=" '$(ApplicationVersion)' == '' ">1</ApplicationVersion>
     <!-- Package Publisher -->
     <ApplicationPublisher>lextudio</ApplicationPublisher>
     <!-- Package Description -->
@@ -42,6 +45,7 @@
   <ItemGroup>
     <PackageReference Include="NuGet.Versioning" />
     <PackageReference Include="Mono.Posix" />
+    <PackageReference Include="Nerdbank.GitVersioning" PrivateAssets="all" />
   </ItemGroup>
 
   <ItemGroup>
