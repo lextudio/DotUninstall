@@ -45,7 +45,7 @@ if (-not $SkipWindows) {
   $winScript = Join-Path $PSScriptRoot 'package-windows.ps1'
   $winArgs = @('-Configuration', $Configuration)
   if (-not $SkipSelfContained) { $winArgs += '-SelfContained' }
-  # if (-not $SkipTrim) { $winArgs += '-Trim' }
+  if (-not $SkipTrim) { $winArgs += '-Trim' }
   & $winScript @winArgs | Out-Null
 }
 

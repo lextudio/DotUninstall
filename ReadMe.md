@@ -1,6 +1,8 @@
 # DotUninstall: Cross Platform UI for .NET Uninstall Tool
 
-A lightweight cross‑platform (Windows / macOS) graphical user interface that wraps the official `dotnet-core-uninstall` command‑line utility from Microsoft.
+![GitHub all releases](https://img.shields.io/github/downloads/lextudio/DotUninstall/total?label=Downloads&logo=github)
+
+A minimalist cross‑platform (Windows / macOS) graphical user interface that wraps the official `dotnet-core-uninstall` command‑line utility from Microsoft.
 
 > This project is a community UI helper. It is **not** an official Microsoft application. Uninstalling SDKs/runtimes can impact existing projects—read the safety notes below.
 
@@ -42,7 +44,7 @@ On macOS you will be prompted to run the tool with `sudo` if you installed .NET 
 
 ### Prebuilt Binaries
 
-Release binaries are available on the [Releases](https://github.com/lextudio/dotuninstall/releases) page.
+Release binaries are available on the [Releases](https://github.com/lextudio/DotUninstall/releases) page.
 
 ### Build from Source
 
