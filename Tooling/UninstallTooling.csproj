@@ -5,6 +5,11 @@
     <Nullable>enable</Nullable>
     <AssemblyName>DotNetUninstall.Tooling</AssemblyName>
     <RootNamespace>DotNetUninstall.Tooling</RootNamespace>
+    <!-- NOTE: GlobalSuppressions.cs only works for analyzer (CA/RSA/IDE/etc.) diagnostics.
+         Core C# compiler warnings (CSxxxx) cannot be suppressed there and require either
+         #pragma directives or this NoWarn list. We isolate them to this vendored wrapper
+         project so the main application can still benefit from strict warnings. -->
+    <NoWarn>0162;0219;0618;0649;8019;8600;8601;8602;8603;8604;8618;8619;8620;8625;8765;8767</NoWarn>
   </PropertyGroup>
 
   <!-- Link in the necessary source files from the submodule (excluding Program.cs) -->
