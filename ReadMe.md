@@ -1,6 +1,9 @@
 # DotUninstall: Cross Platform UI for .NET Uninstall Tool
 
+![DotUninstall Banner](./social-preview.png)
+
 ![GitHub all releases](https://img.shields.io/github/downloads/lextudio/DotUninstall/total?label=Downloads&logo=github)
+
 
 A minimalist cross‑platform (Windows / macOS) graphical user interface that wraps the official `dotnet-core-uninstall` command‑line utility from Microsoft.
 
@@ -11,6 +14,8 @@ A minimalist cross‑platform (Windows / macOS) graphical user interface that wr
 Managing many installed .NET SDK and runtime versions becomes cumbersome. The official `dotnet-core-uninstall` tool provides the correct uninstall logic and safety rules (e.g. protecting required or currently in‑use SDKs), but it is console-only. This UI layers discoverability, visual status, and one‑click removal while preserving the tool’s rules.
 
 ## Key Features
+
+![DotUninstall UI Screenshot](./DotUninstall.png)
 
 - Detects and lists installed .NET SDKs & runtimes using the same logic of `dotnet-core-uninstall` (including uninstallability reasons).
 - Shows architecture, uninstallability, and reason (e.g. "Cannot uninstall SDK that is required...").
@@ -53,6 +58,14 @@ From repository root:
 ```bash
 dotnet build DotNetUninstall/DotNetUninstall.csproj -c Debug
 dotnet run --project DotNetUninstall/DotNetUninstall.csproj
+```
+
+### Install via winget (Windows)
+
+You can install DotUninstall using the Windows Package Manager (winget):
+
+```powershell
+winget install lextudio.DotUninstall
 ```
 
 ## Project Structure (Simplified)
