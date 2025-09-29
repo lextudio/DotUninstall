@@ -144,10 +144,10 @@ if ($Dmg) {
     Copy-Item $b.Path (Join-Path $Stage $dest) -Recurse
   }
   if (Test-Path LICENSE) { Copy-Item LICENSE $Stage }
-  $dmgName = "dotnet-uninstall-ui-macos-$Version.dmg"
+  $dmgName = "DotUninstall-macos-$Version.dmg"
   $dmgPath = Join-Path $ReleaseOut $dmgName
   Step "Creating DMG: $dmgPath"
-  & hdiutil create -volname 'DotNetUninstallToolUI' -srcfolder $Stage -ov -format UDZO $dmgPath | Out-Null
+  & hdiutil create -volname 'DotUninstall' -srcfolder $Stage -ov -format UDZO $dmgPath | Out-Null
   Info "DMG created: $dmgPath"
   Warn 'Remember to codesign & notarize for distribution.'
 }

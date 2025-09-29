@@ -97,8 +97,8 @@ public sealed partial class MainPage : Page
         {
             var tag = _vm?.LatestReleaseTag;
             var url = string.IsNullOrWhiteSpace(tag)
-                ? "https://github.com/lextudio/dotnet-core-uninstall-ui/releases/latest"
-                : $"https://github.com/lextudio/dotnet-core-uninstall-ui/releases/tag/{tag}";
+                ? "https://github.com/lextudio/DotUninstall/releases/latest"
+                : $"https://github.com/lextudio/DotUninstall/releases/tag/{tag}";
             // Cross-platform open
             if (OperatingSystem.IsWindows())
             {
