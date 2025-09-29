@@ -13,6 +13,7 @@ using NuGet.Versioning;
 using Uno.Extensions.Navigation;
 using Windows.Foundation.Metadata;
 using Mono.Unix.Native; // Mono.Posix for elevation detection
+using Octokit;
 
 namespace DotNetUninstall.Presentation;
 
@@ -66,6 +67,16 @@ public partial class MainViewModel : ObservableObject
     [ObservableProperty]
     private string? suggestedDownload; // Unused
 
+    // GitHub update notification
+    [ObservableProperty]
+    private string? latestReleaseTag;
+
+    [ObservableProperty]
+    private bool hasUpdate;
+
+    [ObservableProperty]
+    private string? updateMessage;
+
     public IAsyncRelayCommand RefreshCommand { get; }
     public IAsyncRelayCommand<DotnetInstallEntry> UninstallCommand { get; }
     public IAsyncRelayCommand BrowseCommand { get; }
@@ -91,6 +102,8 @@ public partial class MainViewModel : ObservableObject
         };
         // External tool path no longer required.
         DetectElevation();
+        // Fire and forget update check
+        _ = Task.Run(CheckForUpdatesAsync);
     }
 
     public async Task RefreshAsync()
@@ -513,6 +526,97 @@ public partial class MainViewModel : ObservableObject
         }
         OnPropertyChanged(nameof(GroupedSdkItems));
         OnPropertyChanged(nameof(GroupedRuntimeItems));
+    }
+
+    private async Task CheckForUpdatesAsync()
+    {
+        try
+        {
+            // Limit to at most once per day using a small persisted stamp file.
+            var stamp = GetUpdateStampPath();
+            if (File.Exists(stamp))
+            {
+                try
+                {
+                    var txt = await File.ReadAllTextAsync(stamp);
+                    if (DateTimeOffset.TryParse(txt, out var last) && (DateTimeOffset.UtcNow - last) < TimeSpan.FromDays(1))
+                    {
+                        return; // already checked within past day
+                    }
+                }
+                catch { }
+            }
+
+            var owner = "lextudio";
+            var repo = "dotuninstall"; // current repository name
+            var client = new GitHubClient(new ProductHeaderValue("dotuninstall"))
+            {
+                // Set a very small request timeout guard via a CTS when calling below
+            };
+            using var cts = new CancellationTokenSource(TimeSpan.FromSeconds(4));
+            Release? latestRelease = null;
+            try
+            {
+                latestRelease = await client.Repository.Release.GetLatest(owner, repo).WaitAsync(cts.Token);
+            }
+            catch { return; } // ignore errors/timeouts
+            var tag = latestRelease?.TagName;
+            if (string.IsNullOrWhiteSpace(tag)) return;
+            LatestReleaseTag = tag;
+            var current = GetCurrentVersion();
+            if (TryParseVersion(tag, out var latest) && TryParseVersion(current, out var currentV))
+            {
+                if (latest > currentV)
+                {
+                    HasUpdate = true;
+                    UpdateMessage = $"A newer release {latest} is available (current {currentV}).";
+                }
+            }
+            // Persist stamp only after a successful request (even if no update available)
+            try { await File.WriteAllTextAsync(stamp, DateTimeOffset.UtcNow.ToString("o")); } catch { }
+        }
+        catch { }
+    }
+
+    private static string GetUpdateStampPath()
+    {
+        try
+        {
+            var home = Environment.GetFolderPath(Environment.SpecialFolder.UserProfile);
+            var dir = Path.Combine(home, ".dotnet-uninstall-gui");
+            Directory.CreateDirectory(dir);
+            return Path.Combine(dir, "last_update_check.txt");
+        }
+        catch
+        {
+            return Path.Combine(Path.GetTempPath(), "dotuninstall_last_update_check.txt");
+        }
+    }
+
+    private static string GetCurrentVersion()
+    {
+        try
+        {
+            var asm = typeof(MainViewModel).Assembly;
+            var info = asm.GetCustomAttributes(typeof(System.Reflection.AssemblyInformationalVersionAttribute), false)
+                .OfType<System.Reflection.AssemblyInformationalVersionAttribute>()
+                .FirstOrDefault();
+            return info?.InformationalVersion ?? "0.0";
+        }
+        catch { return "0.0"; }
+    }
+
+    private static bool TryParseVersion(string? text, out NuGetVersion version)
+    {
+        version = new NuGetVersion(0,0,0);
+        if (string.IsNullOrWhiteSpace(text)) return false;
+        if (text.StartsWith('v')) text = text[1..];
+        if (!NuGetVersion.TryParse(text, out var parsed) || parsed is null)
+        {
+            return false;
+        }
+        version = parsed;
+        return true;
     }
 
     private static string GetUserConfigFile()

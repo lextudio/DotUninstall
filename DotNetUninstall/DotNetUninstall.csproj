@@ -40,12 +40,17 @@
       ThemeService;
       SkiaRenderer;
     </UnoFeatures>
+    <!-- Expose full semantic version (Major.Minor.Patch) for runtime comparison.
+      Nerdbank.GitVersioning supplies VersionMajor/Minor/Patch. Fallback to .0 patch if absent. -->
+    <AssemblyInformationalVersion Condition="'$(AssemblyInformationalVersion)' == '' and '$(VersionPatch)' != ''">$(VersionMajor).$(VersionMinor).$(VersionPatch)</AssemblyInformationalVersion>
+    <AssemblyInformationalVersion Condition="'$(AssemblyInformationalVersion)' == ''">$(VersionMajor).$(VersionMinor).0</AssemblyInformationalVersion>
   </PropertyGroup>
 
   <ItemGroup>
     <PackageReference Include="NuGet.Versioning" />
     <PackageReference Include="Mono.Posix" />
     <PackageReference Include="Nerdbank.GitVersioning" PrivateAssets="all" />
+    <PackageReference Include="Octokit" />
   </ItemGroup>
 
   <ItemGroup>

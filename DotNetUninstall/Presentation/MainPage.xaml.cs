@@ -3,6 +3,7 @@ using Microsoft.UI.Xaml.Controls;
 using Microsoft.UI.Xaml.Data;
 using System;
 using System.ComponentModel;
+using System.Diagnostics;
 
 namespace DotNetUninstall.Presentation;
 
@@ -87,5 +88,30 @@ public sealed partial class MainPage : Page
                 b.IsEnabled = false;
             }
         }
+    }
+
+    private void OnOpenReleasePage(object sender, RoutedEventArgs e)
+    {
+        try
+        {
+            var tag = _vm?.LatestReleaseTag;
+            var url = string.IsNullOrWhiteSpace(tag)
+                ? "https://github.com/lextudio/dotnet-core-uninstall-ui/releases/latest"
+                : $"https://github.com/lextudio/dotnet-core-uninstall-ui/releases/tag/{tag}";
+            // Cross-platform open
+            if (OperatingSystem.IsWindows())
+            {
+                Process.Start(new ProcessStartInfo("cmd", $"/c start {url}") { CreateNoWindow = true });
+            }
+            else if (OperatingSystem.IsMacOS())
+            {
+                Process.Start("open", url);
+            }
+            else if (OperatingSystem.IsLinux())
+            {
+                Process.Start("xdg-open", url);
+            }
+        }
+        catch { }
     }
 }
