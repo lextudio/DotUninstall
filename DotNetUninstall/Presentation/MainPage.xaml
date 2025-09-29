@@ -37,6 +37,24 @@
               FontSize="14"
               FontWeight="Bold"
               Text="{Binding Channel, Converter={StaticResource ChannelDisplayConverter}}" />
+            <!--  Channel lifecycle / EOL badge: dynamic background based on lifecycle state for visual consistency  -->
+            <Border
+              Margin="6,0,0,0"
+              Padding="6,2"
+              CornerRadius="4"
+              Background="{Binding LifecycleState, Converter={StaticResource LifecycleStateToBrushConverter}}"
+              BorderBrush="#3A3A3A"
+              BorderThickness="1"
+              ToolTipService.ToolTip="{Binding EolDisplay}"
+              Visibility="{Binding EolDisplay, Converter={StaticResource NullToVisibilityConverter}}">
+              <StackPanel Orientation="Horizontal" Spacing="4">
+                <TextBlock
+                  FontSize="11"
+                  Foreground="White"
+                  FontWeight="SemiBold"
+                  Text="{Binding EolDisplay}" />
+              </StackPanel>
+            </Border>
           </StackPanel>
         </ToggleButton>
         <Grid Margin="4,4,4,0" Visibility="{Binding IsChecked, ElementName=GroupToggle, Converter={StaticResource BoolToVisibilityConverter}}">
@@ -303,6 +321,20 @@
               FontSize="12"
               Opacity="0.7"><Run Text="Count: " /><Run Text="{Binding SdkCount}" /></TextBlock>
             <ItemsControl ItemTemplate="{StaticResource HeaderTemplate}" ItemsSource="{Binding GroupedSdkItems}" />
+          </StackPanel>
+        </ScrollViewer>
+      </PivotItem>
+      <PivotItem Header="Settings">
+        <ScrollViewer>
+          <StackPanel Spacing="16" Padding="12">
+            <TextBlock FontSize="14" FontWeight="Bold" Text="Application" />
+            <StackPanel Orientation="Horizontal" Spacing="8" VerticalAlignment="Center">
+              <TextBlock Text="Version:" FontWeight="SemiBold" />
+              <TextBlock Text="{Binding AppVersion}" />
+            </StackPanel>
+            <Button Padding="12,6" Content="Check for Updates Now" Command="{Binding CheckUpdateNowCommand}" />
+            <TextBlock FontSize="12" Text="{Binding UpdateMessage}" TextWrapping="WrapWholeWords" />
+            <TextBlock FontSize="12" Opacity="0.6" Text="Manual check bypasses the once-per-day automatic delay." />
           </StackPanel>
         </ScrollViewer>
       </PivotItem>

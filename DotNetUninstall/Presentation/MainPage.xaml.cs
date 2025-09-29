@@ -4,6 +4,7 @@ using Microsoft.UI.Xaml.Data;
 using System;
 using System.ComponentModel;
 using System.Diagnostics;
+using Uno.Extensions.Navigation;
 
 namespace DotNetUninstall.Presentation;
 
@@ -114,4 +115,5 @@ public sealed partial class MainPage : Page
         }
         catch { }
     }
+
 }

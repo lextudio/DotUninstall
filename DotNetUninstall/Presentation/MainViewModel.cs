@@ -4,6 +4,7 @@ using System.Diagnostics;
 using System.Runtime.InteropServices;
 using System.Text.Json;
 using System.Text.RegularExpressions;
+using System.Text.Json.Serialization; // For JsonPropertyName attributes mapping kebab-case properties
 using CommunityToolkit.Mvvm.ComponentModel;
 using CommunityToolkit.Mvvm.Input;
 using DotNetUninstall.Models;
@@ -80,8 +81,10 @@ public partial class MainViewModel : ObservableObject
     public IAsyncRelayCommand RefreshCommand { get; }
     public IAsyncRelayCommand<DotnetInstallEntry> UninstallCommand { get; }
     public IAsyncRelayCommand BrowseCommand { get; }
+    public IAsyncRelayCommand CheckUpdateNowCommand { get; }
 
     public string Title { get; }
+    public string AppVersion => GetCurrentVersion();
 
     public MainViewModel(IStringLocalizer localizer, IOptions<AppConfig> appInfo, INavigator navigator)
     {
@@ -90,6 +93,7 @@ public partial class MainViewModel : ObservableObject
         RefreshCommand = new AsyncRelayCommand(RefreshAsync);
         UninstallCommand = new AsyncRelayCommand<DotnetInstallEntry>(UninstallAsync, _ => HasUninstallTool);
         BrowseCommand = new AsyncRelayCommand(BrowseAsync);
+    CheckUpdateNowCommand = new AsyncRelayCommand(ForceCheckForUpdatesAsync);
         SdkItems.CollectionChanged += (_, __) =>
         {
             OnPropertyChanged(nameof(SdkCount));
@@ -131,34 +135,6 @@ public partial class MainViewModel : ObservableObject
         }
     }
 
-    private Task DetectToolAsync() => Task.CompletedTask; // No-op retained for compatibility
-
-    private string BuildSuggestedDownload()
-    {
-        // Tailored to release 1.7.618124 assets (5 assets total: 3 binaries + 2 source archives)
-        // Binaries present: Windows MSI, macOS x64 tar.gz, macOS arm64 tar.gz
-        // Not present: Linux binaries
-        try
-        {
-            if (OperatingSystem.IsWindows())
-            {
-                return "Recommended: dotnet-core-uninstall.msi";
-            }
-            if (OperatingSystem.IsMacOS())
-            {
-                var arch = RuntimeInformation.ProcessArchitecture;
-                return arch == Architecture.Arm64
-                    ? "Recommended: dotnet-core-uninstall-macos-arm64.tar.gz"
-                    : "Recommended: dotnet-core-uninstall-macos-x64.tar.gz";
-            }
-            // Linux or other OS
-            return "No prebuilt binary for this OS in recent releases like 1.7.618124; see release page for updates or remove manually.";
-        }
-        catch
-        {
-            return "See release assets for the correct file name.";
-        }
-    }
 
     private async Task ListFromEmbeddedAsync()
     {
@@ -244,20 +220,23 @@ public partial class MainViewModel : ObservableObject
     private static readonly Uri ReleaseMetadataIndex = new("https://builds.dotnet.microsoft.com/dotnet/release-metadata/releases-index.json");
 
     // Real schema (subset) for releases-index.json
-    private sealed class ReleasesIndexRoot { public List<ChannelInfo>? ReleasesIndex { get; set; } }
+    private sealed class ReleasesIndexRoot
+    {
+        [JsonPropertyName("releases-index")] public List<ChannelInfo>? ReleasesIndex { get; set; }
+    }
     private sealed class ChannelInfo
     {
-        public string? ChannelVersion { get; set; }
-        public string? ReleaseType { get; set; }      // lts | sts
-        public string? SupportPhase { get; set; }     // preview | go-live | active | maintenance | eol
-        public DateTime? EolDate { get; set; }
-        public string? ReleasesJson { get; set; }
+        [JsonPropertyName("channel-version")] public string? ChannelVersion { get; set; }
+        [JsonPropertyName("release-type")] public string? ReleaseType { get; set; }      // lts | sts
+        [JsonPropertyName("support-phase")] public string? SupportPhase { get; set; }     // preview | go-live | active | maintenance | eol
+        [JsonPropertyName("eol-date")] public DateTime? EolDate { get; set; }
+        [JsonPropertyName("releases.json")] public string? ReleasesJson { get; set; }
     }
     // Per-channel releases.json subset
     private sealed class ChannelReleases { public List<ChannelRelease>? Releases { get; set; } }
     private sealed class ChannelRelease
     {
-        public string? ReleaseVersion { get; set; }
+        [JsonPropertyName("release-version")] public string? ReleaseVersion { get; set; }
         public bool? Security { get; set; }
         public SdkRelease? Sdk { get; set; }
         public List<SdkRelease>? Sdks { get; set; }
@@ -578,12 +557,31 @@ public partial class MainViewModel : ObservableObject
         catch { }
     }
 
+    // Manual update check invoked from Settings page, bypassing daily throttle
+    public async Task ForceCheckForUpdatesAsync()
+    {
+        try
+        {
+            var stamp = GetUpdateStampPath();
+            if (File.Exists(stamp))
+            {
+                try { File.Delete(stamp); } catch { }
+            }
+            await CheckForUpdatesAsync();
+            if (!HasUpdate)
+            {
+                UpdateMessage = $"You are running the latest version ({GetCurrentVersion()}).";
+            }
+        }
+        catch { }
+    }
+
     private static string GetUpdateStampPath()
     {
         try
         {
             var home = Environment.GetFolderPath(Environment.SpecialFolder.UserProfile);
-            var dir = Path.Combine(home, ".dotnet-uninstall-gui");
+            var dir = Path.Combine(home, ".dotuninstall");
             Directory.CreateDirectory(dir);
             return Path.Combine(dir, "last_update_check.txt");
         }
@@ -617,46 +615,6 @@ public partial class MainViewModel : ObservableObject
         }
         version = parsed;
         return true;
-    }
-
-    private static string GetUserConfigFile()
-    {
-        var home = Environment.GetFolderPath(Environment.SpecialFolder.UserProfile);
-        var dir = Path.Combine(home, ".dotnet-uninstall-gui");
-        Directory.CreateDirectory(dir);
-        return Path.Combine(dir, "config.json");
-    }
-
-    private static void PersistToolPath(string path)
-    {
-        try
-        {
-            if (string.IsNullOrWhiteSpace(path) || !File.Exists(path)) return;
-            var file = GetUserConfigFile();
-            var json = JsonSerializer.Serialize(new PersistedConfig { UninstallToolPath = path });
-            File.WriteAllText(file, json);
-        }
-        catch { }
-    }
-
-    private static string? LoadPersistedToolPath()
-    {
-        try
-        {
-            var file = GetUserConfigFile();
-            if (!File.Exists(file)) return null;
-            var json = File.ReadAllText(file);
-            var cfg = JsonSerializer.Deserialize<PersistedConfig>(json);
-            if (cfg?.UninstallToolPath != null && File.Exists(cfg.UninstallToolPath))
-                return cfg.UninstallToolPath;
-        }
-        catch { }
-        return null;
-    }
-
-    private sealed class PersistedConfig
-    {
-        public string? UninstallToolPath { get; set; }
     }
 
     private Task UpdateToolVersionAsync() => Task.CompletedTask; // No-op
