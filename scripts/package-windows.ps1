@@ -26,43 +26,14 @@ if ($Framework -and ($Framework -ieq $Configuration -or $Framework -notmatch '^n
 Write-Host "Config=$Configuration Framework=$Framework" -ForegroundColor DarkGray
 
 function Resolve-Version {
-    param([string]$ProjectPath)
-    $v = $null
-    # 1. Try local tool (manifest)
-    try {
-        $line = & dotnet nbgv get-version -v SemVer2 2>$null
-        if ($LASTEXITCODE -eq 0 -and $line) { $v = $line.Trim() }
-    } catch { }
-    # 2. Attempt install locally if still missing (idempotent)
-    if (-not $v) {
-        Write-Host '(version) ensuring local nbgv tool is installed' -ForegroundColor DarkGray
-        try { & dotnet tool install nbgv --version 3.6.143 2>$null | Out-Null } catch { }
-        try {
-            $line = & dotnet nbgv get-version -v SemVer2 2>$null
-            if ($LASTEXITCODE -eq 0 -and $line) { $v = $line.Trim() }
-        } catch { }
-    }
-    # 3. Fallback: version.json
-    if (-not $v) {
-        $root = Resolve-Path (Join-Path (Split-Path $ProjectPath -Parent) '..') 2>$null
-        if ($root) {
-            $vj = Join-Path $root 'version.json'
-            if (Test-Path $vj) {
-                try { $json = Get-Content $vj -Raw | ConvertFrom-Json; if ($json.version) { $v = $json.version } } catch { }
-            }
-        }
-    }
-    # 4. Fallback: project ApplicationDisplayVersion
-    if (-not $v) {
-        $xml = Get-Content $ProjectPath -Raw
-        if ($xml -match '<ApplicationDisplayVersion>(?<v>[^<]+)</ApplicationDisplayVersion>') { $v = $Matches['v'] }
-    }
-    if ($v -and $v -match '^[0-9]+\.[0-9]+$') { $v = "$v.0" }
-    if (-not $v) { $v = '0.1.0' }
-    return $v
+    $tag = ''
+    try { $tag = git describe --tags --abbrev=0 2>$null } catch { }
+    if ($tag) { $tag = $tag.Trim(); if ($tag -match '^v') { $tag = $tag.Substring(1) } }
+    if (-not $tag) { $tag = '0.1.0' }
+    return $tag
 }
 
-$Version = Resolve-Version -ProjectPath $project
+$Version = Resolve-Version
 Write-Host "Using version: $Version" -ForegroundColor Cyan
 
 $baseArtifacts = Join-Path $PSScriptRoot "..\artifacts"

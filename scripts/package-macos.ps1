@@ -42,43 +42,16 @@ function Warn($m){ Write-Host "[WARN] $m" -ForegroundColor Yellow }
 $Project = Join-Path $PSScriptRoot '../DotNetUninstall/DotNetUninstall.csproj'
 if (-not (Test-Path $Project)) { throw "Project file not found: $Project" }
 
-# Resolve version (NBGV -> version.json -> ApplicationDisplayVersion)
+# Resolve version using latest git tag matching v* (fallback to 0.1.0)
 function Resolve-Version {
-  param([string]$ProjectPath)
-  $v = $null
-  # 1. Local tool (manifest)
-  try {
-    $line = & dotnet nbgv get-version -v SemVer2 2>$null
-    if ($LASTEXITCODE -eq 0 -and $line) { $v = $line.Trim() }
-  } catch { }
-  # 2. Install locally if needed
-  if (-not $v) {
-    Info '(version) ensuring local nbgv tool is installed'
-    try { & dotnet tool install nbgv --version 3.6.143 2>$null | Out-Null } catch { }
-    try {
-      $line = & dotnet nbgv get-version -v SemVer2 2>$null
-      if ($LASTEXITCODE -eq 0 -and $line) { $v = $line.Trim() }
-    } catch { }
-  }
-  # 3. version.json
-  if (-not $v) {
-    $root = Resolve-Path (Join-Path (Split-Path $ProjectPath -Parent) '..') 2>$null
-    if ($root) {
-      $vj = Join-Path $root 'version.json'
-      if (Test-Path $vj) { try { $json = Get-Content $vj -Raw | ConvertFrom-Json; if ($json.version) { $v = $json.version } } catch { } }
-    }
-  }
-  # 4. ApplicationDisplayVersion
-  if (-not $v) {
-    $xml = Get-Content $ProjectPath -Raw
-    if ($xml -match '<ApplicationDisplayVersion>(?<v>[^<]+)') { $v = $Matches['v'] }
-  }
-  if ($v -and $v -match '^[0-9]+\.[0-9]+$') { $v = "$v.0" }
-  if (-not $v) { $v = '0.1.0' }
-  return $v
+  $tag = ''
+  try { $tag = git describe --tags --abbrev=0 2>$null } catch { }
+  if ($tag) { $tag = $tag.Trim(); if ($tag -match '^v') { $tag = $tag.Substring(1) } }
+  if (-not $tag) { $tag = '0.1.0' }
+  return $tag
 }
 
-$Version = Resolve-Version -ProjectPath $Project
+$Version = Resolve-Version
 Step "Version resolved: $Version"
 
 $RepoRoot = Resolve-Path (Join-Path $PSScriptRoot '..')

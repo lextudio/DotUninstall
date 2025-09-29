@@ -21,7 +21,7 @@
     <!-- Added for macOS root/sudo detection using Unix Syscalls -->
     <PackageVersion Include="Mono.Posix" Version="7.1.0-final.1.21458.1" />
     <!-- Git-based semantic versioning -->
-    <PackageVersion Include="Nerdbank.GitVersioning" Version="3.6.143" />
+    <PackageVersion Include="GitVersion.MsBuild" Version="5.12.0" />
     <!-- GitHub REST API client -->
     <PackageVersion Include="Octokit" Version="7.0.0" />
   </ItemGroup>
