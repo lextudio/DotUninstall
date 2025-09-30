@@ -24,10 +24,10 @@
             <TextBlock FontSize="14" FontWeight="Bold" Text="{Binding Channel, Converter={StaticResource ChannelDisplayConverter}}" />
           </StackPanel>
         </ToggleButton>
-        <Grid Margin="4,4,4,0" Visibility="{Binding IsChecked, ElementName=GroupToggle, Converter={StaticResource BoolToVisibilityConverter}}">
+        <Grid Margin="0,4,4,0" Background="Transparent" Visibility="{Binding IsChecked, ElementName=GroupToggle, Converter={StaticResource BoolToVisibilityConverter}}">
           <StackPanel>
             <!-- Badge row: ReleaseType | SupportPhase | EOL | latest -->
-            <StackPanel Margin="6,6,0,4" Orientation="Horizontal" Spacing="6">
+            <StackPanel Margin="0,6,0,4" Orientation="Horizontal" Spacing="6">
               <!-- Release Type badge -->
               <Border Padding="6,2" CornerRadius="4" Background="#0E5A8A" Visibility="{Binding ReleaseType, Converter={StaticResource NullToVisibilityConverter}}">
                 <StackPanel Orientation="Horizontal" Spacing="4" VerticalAlignment="Center">
@@ -212,7 +212,7 @@
     </DataTemplate>
   </Page.Resources>
   <Grid RowDefinitions="Auto,*,Auto">
-    <StackPanel Grid.Row="0" Spacing="4" Margin="0,0,0,4">
+    <StackPanel Grid.Row="1" Spacing="4" Margin="0,0,0,4">
       <!--  Snapshot / cache status banner  -->
       <Border
         Margin="8,8,8,0"
@@ -332,7 +332,7 @@
         </StackPanel>
       </Border>
     </StackPanel>
-    <Pivot x:Name="MainPivot" Grid.Row="1">
+    <Pivot x:Name="MainPivot" Grid.Row="0">
       <PivotItem Header="Runtimes">
         <ScrollViewer>
           <StackPanel>
