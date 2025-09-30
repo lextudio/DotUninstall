@@ -18,50 +18,36 @@
         Margin="8,0,8,12"
         Padding="0"
         CornerRadius="6">
-        <ToggleButton
-          x:Name="GroupToggle"
-          Padding="0"
-          HorizontalAlignment="Stretch"
-          Background="Transparent"
-          BorderThickness="0"
-          IsChecked="True">
-          <StackPanel
-            VerticalAlignment="Center"
-            Orientation="Horizontal"
-            Spacing="8">
-            <TextBlock
-              FontSize="14"
-              FontWeight="Bold"
-              Text=".NET" />
-            <TextBlock
-              FontSize="14"
-              FontWeight="Bold"
-              Text="{Binding Channel, Converter={StaticResource ChannelDisplayConverter}}" />
-            <!--  Channel lifecycle / EOL badge: dynamic background based on lifecycle state for visual consistency  -->
-            <Border
-              Margin="6,0,0,0"
-              Padding="6,2"
-              CornerRadius="4"
-              Background="{Binding LifecycleState, Converter={StaticResource LifecycleStateToBrushConverter}}"
-              BorderBrush="#3A3A3A"
-              BorderThickness="1"
-              ToolTipService.ToolTip="{Binding EolDisplay}"
-              Visibility="{Binding EolDisplay, Converter={StaticResource NullToVisibilityConverter}}">
-              <StackPanel Orientation="Horizontal" Spacing="4">
-                <TextBlock
-                  FontSize="11"
-                  Foreground="White"
-                  FontWeight="SemiBold"
-                  Text="{Binding EolDisplay}" />
-              </StackPanel>
-            </Border>
+        <ToggleButton x:Name="GroupToggle" Padding="0" HorizontalAlignment="Stretch" Background="Transparent" BorderThickness="0" IsChecked="True">
+          <StackPanel VerticalAlignment="Center" Orientation="Horizontal" Spacing="8">
+            <TextBlock FontSize="14" FontWeight="Bold" Text=".NET" />
+            <TextBlock FontSize="14" FontWeight="Bold" Text="{Binding Channel, Converter={StaticResource ChannelDisplayConverter}}" />
           </StackPanel>
         </ToggleButton>
         <Grid Margin="4,4,4,0" Visibility="{Binding IsChecked, ElementName=GroupToggle, Converter={StaticResource BoolToVisibilityConverter}}">
-          <ListView
-            ItemTemplate="{StaticResource InstallEntryTemplate}"
-            ItemsSource="{Binding Items}"
-            SelectionMode="None" />
+          <StackPanel>
+            <!-- Badge row: ReleaseType | SupportPhase | EOL | latest -->
+            <StackPanel Margin="6,6,0,4" Orientation="Horizontal" Spacing="6">
+              <!-- Release Type badge -->
+              <Border Padding="6,2" CornerRadius="4" Background="#0E5A8A" Visibility="{Binding ReleaseType, Converter={StaticResource NullToVisibilityConverter}}">
+                <TextBlock FontSize="11" Foreground="White" FontWeight="SemiBold" Text="{Binding ReleaseType}" />
+              </Border>
+              <!-- Support Phase badge -->
+              <Border Padding="6,2" CornerRadius="4" Background="#556270" Visibility="{Binding SupportPhase, Converter={StaticResource NullToVisibilityConverter}}">
+                <TextBlock FontSize="11" Foreground="White" Text="{Binding SupportPhase}" />
+              </Border>
+              <!-- EOL badge -->
+              <Border Padding="6,2" CornerRadius="4" Background="#8A2D3C" Visibility="{Binding EolBadge, Converter={StaticResource NullToVisibilityConverter}}" ToolTipService.ToolTip="{Binding EolDisplay}">
+                <TextBlock FontSize="11" Foreground="White" FontWeight="SemiBold" Text="{Binding EolBadge}" />
+              </Border>
+              <!-- Latest version badge (show even if installed? only if missing per requirement) -->
+              <Border Padding="6,2" CornerRadius="4" Background="#1F6F50" Visibility="{Binding ShowLatestRelevantMissing, Converter={StaticResource BoolToVisibilityConverter}}">
+                  <TextBlock FontSize="11" Foreground="White" Text="{Binding LatestRelevantLabel}" />
+              </Border>
+              <Button Padding="4,0" Content="Learn more" Tag="{Binding ChannelDownloadUrl}" Click="OnOpenChannelDownload" Visibility="{Binding ShowLatestRelevantMissing, Converter={StaticResource BoolToVisibilityConverter}}" />
+            </StackPanel>
+            <ListView ItemTemplate="{StaticResource InstallEntryTemplate}" ItemsSource="{Binding Items}" SelectionMode="None" />
+          </StackPanel>
         </Grid>
       </StackPanel>
     </DataTemplate>
@@ -212,52 +198,59 @@
           Command="{Binding ElementName=RootPage, Path=DataContext.UninstallCommand}"
           CommandParameter="{Binding}"
           Content="Uninstall"
-          IsEnabled="{Binding CanUninstall}" Loaded="Button_Loaded" />
+          IsEnabled="{Binding CanUninstall}"
+          Loaded="Button_Loaded" />
       </Grid>
     </DataTemplate>
   </Page.Resources>
   <Grid RowDefinitions="Auto,*,Auto">
-    <!-- Update available banner -->
+    <!--  Update available banner  -->
     <Border
       Grid.Row="0"
       Margin="8,8,8,4"
       Padding="12"
-      CornerRadius="6"
       Background="#D1F0D1"
       BorderBrush="#7BC47B"
       BorderThickness="1"
+      CornerRadius="6"
       Visibility="{Binding HasUpdate, Converter={StaticResource BoolToVisibilityConverter}}">
-      <StackPanel Orientation="Horizontal" Spacing="12" VerticalAlignment="Center">
+      <StackPanel
+        VerticalAlignment="Center"
+        Orientation="Horizontal"
+        Spacing="12">
         <TextBlock
           MaxWidth="640"
-          TextWrapping="WrapWholeWords"
+          FontSize="12"
           Foreground="#0B3D0B"
-          FontSize="12">
+          TextWrapping="WrapWholeWords">
           <Run Text="Update available: " />
           <Run Text="{Binding UpdateMessage}" />
         </TextBlock>
         <Button
           Padding="8,4"
-          Content="Open Release Page"
-          Click="OnOpenReleasePage" />
+          Click="OnOpenReleasePage"
+          Content="Open Release Page" />
       </StackPanel>
     </Border>
-    <!-- Elevation / sudo warning banner (macOS) -->
+    <!--  Elevation / sudo warning banner (macOS)  -->
     <Border
       Grid.Row="0"
       Margin="8,8,8,4"
       Padding="12"
-      CornerRadius="6"
       Background="#FFF3CD"
       BorderBrush="#F8D486"
       BorderThickness="1"
+      CornerRadius="6"
       Visibility="{Binding ShowElevationWarning, Converter={StaticResource BoolToVisibilityConverter}}">
-      <StackPanel Orientation="Horizontal" Spacing="12" VerticalAlignment="Center">
+      <StackPanel
+        VerticalAlignment="Center"
+        Orientation="Horizontal"
+        Spacing="12">
         <TextBlock
           MaxWidth="640"
-          TextWrapping="WrapWholeWords"
+          FontSize="12"
           Foreground="#664D03"
-          FontSize="12">
+          TextWrapping="WrapWholeWords">
           <Run Text="Running with elevated privileges (root). " />
           <Run Text="Original user: " />
           <Run Text="{Binding OriginalUser}" />
@@ -266,38 +259,44 @@
         <Button
           Padding="8,4"
           VerticalAlignment="Center"
-          Content="Dismiss"
-          Command="{Binding DismissElevationWarningCommand}" />
+          Command="{Binding DismissElevationWarningCommand}"
+          Content="Dismiss" />
       </StackPanel>
     </Border>
-    <!-- Non-elevated offer banner (macOS) -->
+    <!--  Non-elevated offer banner (macOS)  -->
     <Border
       Grid.Row="0"
       Margin="8,8,8,4"
       Padding="12"
-      CornerRadius="6"
       Background="#E8F4FF"
       BorderBrush="#B3DAF7"
       BorderThickness="1"
+      CornerRadius="6"
       Visibility="{Binding ShowElevationOffer, Converter={StaticResource BoolToVisibilityConverter}}">
-      <StackPanel Orientation="Horizontal" Spacing="12" VerticalAlignment="Center">
+      <StackPanel
+        VerticalAlignment="Center"
+        Orientation="Horizontal"
+        Spacing="12">
         <TextBlock
           MaxWidth="640"
-          TextWrapping="WrapWholeWords"
+          FontSize="12"
           Foreground="#0A466E"
-          FontSize="12">
+          TextWrapping="WrapWholeWords">
           <Run Text="Some uninstall operations may require administrator rights. " />
           <Run Text="You can relaunch this app with elevated privileges." />
         </TextBlock>
-        <StackPanel Orientation="Horizontal" Spacing="8" VerticalAlignment="Center">
+        <StackPanel
+          VerticalAlignment="Center"
+          Orientation="Horizontal"
+          Spacing="8">
           <Button
             Padding="10,4"
-            Content="Relaunch as Administrator"
-            Command="{Binding ElevateCommand}" />
+            Command="{Binding ElevateCommand}"
+            Content="Relaunch as Administrator" />
           <Button
             Padding="8,4"
-            Content="Dismiss"
-            Command="{Binding DismissElevationOfferCommand}" />
+            Command="{Binding DismissElevationOfferCommand}"
+            Content="Dismiss" />
         </StackPanel>
       </StackPanel>
     </Border>
@@ -326,15 +325,30 @@
       </PivotItem>
       <PivotItem Header="Settings">
         <ScrollViewer>
-          <StackPanel Spacing="16" Padding="12">
-            <TextBlock FontSize="14" FontWeight="Bold" Text="Application" />
-            <StackPanel Orientation="Horizontal" Spacing="8" VerticalAlignment="Center">
-              <TextBlock Text="Version:" FontWeight="SemiBold" />
+          <StackPanel Padding="12" Spacing="16">
+            <TextBlock
+              FontSize="14"
+              FontWeight="Bold"
+              Text="Application" />
+            <StackPanel
+              VerticalAlignment="Center"
+              Orientation="Horizontal"
+              Spacing="8">
+              <TextBlock FontWeight="SemiBold" Text="Version:" />
               <TextBlock Text="{Binding AppVersion}" />
             </StackPanel>
-            <Button Padding="12,6" Content="Check for Updates Now" Command="{Binding CheckUpdateNowCommand}" />
-            <TextBlock FontSize="12" Text="{Binding UpdateMessage}" TextWrapping="WrapWholeWords" />
-            <TextBlock FontSize="12" Opacity="0.6" Text="Manual check bypasses the once-per-day automatic delay." />
+            <Button
+              Padding="12,6"
+              Command="{Binding CheckUpdateNowCommand}"
+              Content="Check for Updates Now" />
+            <TextBlock
+              FontSize="12"
+              Text="{Binding UpdateMessage}"
+              TextWrapping="WrapWholeWords" />
+            <TextBlock
+              FontSize="12"
+              Opacity="0.6"
+              Text="Manual check bypasses the once-per-day automatic delay." />
           </StackPanel>
         </ScrollViewer>
       </PivotItem>

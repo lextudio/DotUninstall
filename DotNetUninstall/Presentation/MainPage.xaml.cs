@@ -116,4 +116,27 @@ public sealed partial class MainPage : Page
         catch { }
     }
 
+    private void OnOpenChannelDownload(object sender, RoutedEventArgs e)
+    {
+        try
+        {
+            if (sender is Button b && b.Tag is string url && !string.IsNullOrWhiteSpace(url))
+            {
+                if (OperatingSystem.IsWindows())
+                {
+                    Process.Start(new ProcessStartInfo("cmd", $"/c start {url}") { CreateNoWindow = true });
+                }
+                else if (OperatingSystem.IsMacOS())
+                {
+                    Process.Start("open", url);
+                }
+                else if (OperatingSystem.IsLinux())
+                {
+                    Process.Start("xdg-open", url);
+                }
+            }
+        }
+        catch { }
+    }
+
 }

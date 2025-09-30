@@ -10,13 +10,13 @@
     <ApplicationTitle>DotUninstall</ApplicationTitle>
     <!-- App Identifier -->
     <ApplicationId>com.lextudio.dotuninstall</ApplicationId>
-  <!-- Version mapping now driven by GitVersion.MsBuild (Git tags). Fallbacks remain if properties not yet evaluated. -->
-  <!-- Prefer full semantic version (without pre-release) for display if available -->
-  <ApplicationDisplayVersion Condition=" '$(GitVersion_MajorMinorPatch)' != '' ">$(GitVersion_MajorMinorPatch)</ApplicationDisplayVersion>
-  <ApplicationDisplayVersion Condition=" '$(ApplicationDisplayVersion)' == '' and '$(GitVersion_Major)' != '' and '$(GitVersion_Minor)' != '' ">$(GitVersion_Major).$(GitVersion_Minor)</ApplicationDisplayVersion>
-  <ApplicationDisplayVersion Condition=" '$(ApplicationDisplayVersion)' == '' ">1.0</ApplicationDisplayVersion>
-  <ApplicationVersion Condition=" '$(ApplicationVersion)' == '' and '$(GitVersion_Major)' != '' ">$(GitVersion_Major)</ApplicationVersion>
-  <ApplicationVersion Condition=" '$(ApplicationVersion)' == '' ">1</ApplicationVersion>
+    <!-- Version mapping now driven by GitVersion.MsBuild (Git tags). Fallbacks remain if properties not yet evaluated. -->
+    <!-- Prefer full semantic version (without pre-release) for display if available -->
+    <ApplicationDisplayVersion Condition=" '$(GitVersion_MajorMinorPatch)' != '' ">$(GitVersion_MajorMinorPatch)</ApplicationDisplayVersion>
+    <ApplicationDisplayVersion Condition=" '$(ApplicationDisplayVersion)' == '' and '$(GitVersion_Major)' != '' and '$(GitVersion_Minor)' != '' ">$(GitVersion_Major).$(GitVersion_Minor)</ApplicationDisplayVersion>
+    <ApplicationDisplayVersion Condition=" '$(ApplicationDisplayVersion)' == '' ">1.0</ApplicationDisplayVersion>
+    <ApplicationVersion Condition=" '$(ApplicationVersion)' == '' and '$(GitVersion_Major)' != '' ">$(GitVersion_Major)</ApplicationVersion>
+    <ApplicationVersion Condition=" '$(ApplicationVersion)' == '' ">1</ApplicationVersion>
     <!-- Package Publisher -->
     <ApplicationPublisher>lextudio</ApplicationPublisher>
     <!-- Package Description -->

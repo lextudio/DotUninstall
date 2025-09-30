@@ -256,6 +256,8 @@ public partial class MainViewModel : ObservableObject
         public HashSet<string> SdkVersions { get; } = new(StringComparer.OrdinalIgnoreCase);
         public HashSet<string> RuntimeVersions { get; } = new(StringComparer.OrdinalIgnoreCase);
         public HashSet<string> SecurityVersions { get; } = new(StringComparer.OrdinalIgnoreCase);
+        public string? LatestSdk { get; set; }
+        public string? LatestRuntime { get; set; }
     }
 
     private static string DeriveChannel(string version)
@@ -335,6 +337,9 @@ public partial class MainViewModel : ObservableObject
                 };
                 if (rels?.Releases != null)
                 {
+                    // We want highest (latest) stable versions; use NuGetVersion ordering
+                    NuGetVersion? maxSdk = null;
+                    NuGetVersion? maxRuntime = null;
                     foreach (var r in rels.Releases)
                     {
                         bool sec = r.Security == true;
@@ -343,7 +348,18 @@ public partial class MainViewModel : ObservableObject
                         if (r.Sdk?.Version != null) AddSdk(r.Sdk.Version);
                         if (r.Sdks != null) foreach (var srel in r.Sdks) AddSdk(srel.Version);
                         if (r.Runtime?.Version != null) AddRuntime(r.Runtime.Version);
+                        // Track latest stable (non-prerelease) versions
+                        if (r.Sdk?.Version != null && NuGetVersion.TryParse(r.Sdk.Version, out var sdkNv))
+                        {
+                            if (!sdkNv.IsPrerelease && (maxSdk == null || sdkNv > maxSdk)) maxSdk = sdkNv;
+                        }
+                        if (r.Runtime?.Version != null && NuGetVersion.TryParse(r.Runtime.Version, out var rtNv))
+                        {
+                            if (!rtNv.IsPrerelease && (maxRuntime == null || rtNv > maxRuntime)) maxRuntime = rtNv;
+                        }
                     }
+                    resolved.LatestSdk = maxSdk?.ToNormalizedString();
+                    resolved.LatestRuntime = maxRuntime?.ToNormalizedString();
                 }
                 _channelCache[ch] = resolved;
             }
@@ -491,7 +507,9 @@ public partial class MainViewModel : ObservableObject
             {
                 var first = grp.FirstOrDefault();
                 var rt = first?.ReleaseType?.ToUpperInvariant();
-                GroupedSdkItems.Add(new ChannelGroup(grp.Key!, grp, rt, first?.SupportPhase, first?.EolDate));
+                ChannelResolved? cr = null;
+                _channelCache?.TryGetValue(grp.Key!, out cr);
+                GroupedSdkItems.Add(new ChannelGroup(grp.Key!, grp, rt, first?.SupportPhase, first?.EolDate, cr?.LatestSdk, cr?.LatestRuntime, isSdkGroup: true));
             }
         }
         if (RuntimeItems.Count > 0)
@@ -500,7 +518,9 @@ public partial class MainViewModel : ObservableObject
             {
                 var first = grp.FirstOrDefault();
                 var rt2 = first?.ReleaseType?.ToUpperInvariant();
-                GroupedRuntimeItems.Add(new ChannelGroup(grp.Key!, grp, rt2, first?.SupportPhase, first?.EolDate));
+                ChannelResolved? cr2 = null;
+                _channelCache?.TryGetValue(grp.Key!, out cr2);
+                GroupedRuntimeItems.Add(new ChannelGroup(grp.Key!, grp, rt2, first?.SupportPhase, first?.EolDate, cr2?.LatestSdk, cr2?.LatestRuntime, isSdkGroup: false));
             }
         }
         OnPropertyChanged(nameof(GroupedSdkItems));

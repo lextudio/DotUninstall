@@ -10,12 +10,37 @@ public sealed class ChannelGroup
     public string? ReleaseType { get; }    // lts | sts
     public string? SupportPhase { get; }   // active | maintenance | eol | preview | go-live
     public DateTime? EolDate { get; }
-    public string? EolDisplay => EolDate.HasValue ? $"EOL {EolDate:yyyy-MM-dd}" : null;
+    public string? EolDisplay => EolDate.HasValue ? $"End of life {EolDate:yyyy-MM-dd}" : null;
+    public string? EolBadge => EolDate.HasValue ? $"EOL:{EolDate:yyyy-MM-dd}" : null;
     public string LifecycleState { get; }  // eol | expiring | supported
     public bool IsExpiringSoon => LifecycleState == "expiring";
     public bool IsEol => LifecycleState == "eol";
+    public string? LatestSdkVersion { get; }
+    public string? LatestRuntimeVersion { get; }
+    public bool IsLatestSdkInstalled { get; }
+    public bool IsLatestRuntimeInstalled { get; }
+    public bool IsSdkGroup { get; }
+    public string ChannelDownloadUrl { get; }
+    // Relevant (tab-specific) latest version properties
+    public string? LatestRelevantVersion => IsSdkGroup ? LatestSdkVersion : LatestRuntimeVersion;
+    public bool IsLatestRelevantInstalled => IsSdkGroup ? IsLatestSdkInstalled : IsLatestRuntimeInstalled;
+    public bool ShowLatestRelevantMissing => !string.IsNullOrWhiteSpace(LatestRelevantVersion) && !IsLatestRelevantInstalled;
+    public string? LatestRelevantSummary => ShowLatestRelevantMissing ? $"Latest available: {LatestRelevantVersion}" : null;
+    public string? LatestRelevantLabel => LatestRelevantVersion is null ? null : $"latest:{LatestRelevantVersion}";
 
-    public ChannelGroup(string channel, IEnumerable<DotnetInstallEntry> items, string? releaseType, string? supportPhase, DateTime? eolDate)
+    // Backwards-compat (not used in UI after refinement)
+    public bool ShowLatestMissing => ShowLatestRelevantMissing;
+    public string? LatestMissingSummary => LatestRelevantSummary;
+
+    public ChannelGroup(
+        string channel,
+        IEnumerable<DotnetInstallEntry> items,
+        string? releaseType,
+        string? supportPhase,
+        DateTime? eolDate,
+        string? latestSdkVersion,
+        string? latestRuntimeVersion,
+        bool isSdkGroup)
     {
         Channel = string.IsNullOrWhiteSpace(channel) ? "Other" : channel;
 
@@ -34,6 +59,19 @@ public sealed class ChannelGroup
         ReleaseType = releaseType;
         SupportPhase = supportPhase;
         EolDate = eolDate;
+        LatestSdkVersion = latestSdkVersion;
+        LatestRuntimeVersion = latestRuntimeVersion;
+        IsSdkGroup = isSdkGroup;
+        // Determine if latest versions are installed (simple string match)
+        if (!string.IsNullOrWhiteSpace(LatestSdkVersion))
+        {
+            IsLatestSdkInstalled = Items.Any(i => i.Type == "sdk" && string.Equals(i.Version, LatestSdkVersion, StringComparison.OrdinalIgnoreCase));
+        }
+        if (!string.IsNullOrWhiteSpace(LatestRuntimeVersion))
+        {
+            IsLatestRuntimeInstalled = Items.Any(i => i.Type == "runtime" && string.Equals(i.Version, LatestRuntimeVersion, StringComparison.OrdinalIgnoreCase));
+        }
+        ChannelDownloadUrl = $"https://dotnet.microsoft.com/download/dotnet/{Channel}"; // Generic channel landing page
         LifecycleState = ComputeLifecycleState();
     }
 
