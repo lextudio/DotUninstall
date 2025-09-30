@@ -212,102 +212,126 @@
     </DataTemplate>
   </Page.Resources>
   <Grid RowDefinitions="Auto,*,Auto">
-    <!--  Update available banner  -->
-    <Border
-      Grid.Row="0"
-      Margin="8,8,8,4"
-      Padding="12"
-      Background="#D1F0D1"
-      BorderBrush="#7BC47B"
-      BorderThickness="1"
-      CornerRadius="6"
-      Visibility="{Binding HasUpdate, Converter={StaticResource BoolToVisibilityConverter}}">
-      <StackPanel
-        VerticalAlignment="Center"
-        Orientation="Horizontal"
-        Spacing="12">
-        <TextBlock
-          MaxWidth="640"
-          FontSize="12"
-          Foreground="#0B3D0B"
-          TextWrapping="WrapWholeWords">
-          <Run Text="Update available: " />
-          <Run Text="{Binding UpdateMessage}" />
-        </TextBlock>
-        <Button
-          Padding="8,4"
-          Click="OnOpenReleasePage"
-          Content="Open Release Page" />
-      </StackPanel>
-    </Border>
-    <!--  Elevation / sudo warning banner (macOS)  -->
-    <Border
-      Grid.Row="0"
-      Margin="8,8,8,4"
-      Padding="12"
-      Background="#FFF3CD"
-      BorderBrush="#F8D486"
-      BorderThickness="1"
-      CornerRadius="6"
-      Visibility="{Binding ShowElevationWarning, Converter={StaticResource BoolToVisibilityConverter}}">
-      <StackPanel
-        VerticalAlignment="Center"
-        Orientation="Horizontal"
-        Spacing="12">
-        <TextBlock
-          MaxWidth="640"
-          FontSize="12"
-          Foreground="#664D03"
-          TextWrapping="WrapWholeWords">
-          <Run Text="Running with elevated privileges (root). " />
-          <Run Text="Original user: " />
-          <Run Text="{Binding OriginalUser}" />
-          <Run Text=". Uninstalls may affect the entire system. Proceed with caution." />
-        </TextBlock>
-        <Button
-          Padding="8,4"
-          VerticalAlignment="Center"
-          Command="{Binding DismissElevationWarningCommand}"
-          Content="Dismiss" />
-      </StackPanel>
-    </Border>
-    <!--  Non-elevated offer banner (macOS)  -->
-    <Border
-      Grid.Row="0"
-      Margin="8,8,8,4"
-      Padding="12"
-      Background="#E8F4FF"
-      BorderBrush="#B3DAF7"
-      BorderThickness="1"
-      CornerRadius="6"
-      Visibility="{Binding ShowElevationOffer, Converter={StaticResource BoolToVisibilityConverter}}">
-      <StackPanel
-        VerticalAlignment="Center"
-        Orientation="Horizontal"
-        Spacing="12">
-        <TextBlock
-          MaxWidth="640"
-          FontSize="12"
-          Foreground="#0A466E"
-          TextWrapping="WrapWholeWords">
-          <Run Text="Some uninstall operations may require administrator rights. " />
-          <Run Text="You can relaunch this app with elevated privileges." />
-        </TextBlock>
+    <StackPanel Grid.Row="0" Spacing="4" Margin="0,0,0,4">
+      <!--  Snapshot / cache status banner  -->
+      <Border
+        Margin="8,8,8,0"
+        Padding="8"
+        Background="#F2F2F2"
+        BorderBrush="#CCCCCC"
+        BorderThickness="1"
+        CornerRadius="6"
+        Visibility="{Binding IsUsingSnapshot, Converter={StaticResource BoolToVisibilityConverter}}">
+        <StackPanel Orientation="Horizontal" Spacing="8" VerticalAlignment="Center">
+          <TextBlock FontSize="12" Foreground="#444" Text="Using embedded metadata snapshot (offline)." />
+        </StackPanel>
+      </Border>
+      <Border
+        Margin="8,0,8,0"
+        Padding="8"
+        Background="#EEF7FF"
+        BorderBrush="#B3DAF7"
+        BorderThickness="1"
+        CornerRadius="6"
+        Visibility="{Binding IsUsingCachedLive, Converter={StaticResource BoolToVisibilityConverter}}">
+        <StackPanel Orientation="Horizontal" Spacing="8" VerticalAlignment="Center">
+          <TextBlock FontSize="12" Foreground="#0A466E" Text="Showing cached live metadata (may be up to 6h old)." />
+        </StackPanel>
+      </Border>
+      <!--  Update available banner  -->
+      <Border
+        Margin="8,0,8,0"
+        Padding="12"
+        Background="#D1F0D1"
+        BorderBrush="#7BC47B"
+        BorderThickness="1"
+        CornerRadius="6"
+        Visibility="{Binding HasUpdate, Converter={StaticResource BoolToVisibilityConverter}}">
         <StackPanel
           VerticalAlignment="Center"
           Orientation="Horizontal"
-          Spacing="8">
-          <Button
-            Padding="10,4"
-            Command="{Binding ElevateCommand}"
-            Content="Relaunch as Administrator" />
+          Spacing="12">
+          <TextBlock
+            MaxWidth="640"
+            FontSize="12"
+            Foreground="#0B3D0B"
+            TextWrapping="WrapWholeWords">
+            <Run Text="Update available: " />
+            <Run Text="{Binding UpdateMessage}" />
+          </TextBlock>
           <Button
             Padding="8,4"
-            Command="{Binding DismissElevationOfferCommand}"
+            Click="OnOpenReleasePage"
+            Content="Open Release Page" />
+        </StackPanel>
+      </Border>
+      <!--  Elevation / sudo warning banner (macOS)  -->
+      <Border
+        Margin="8,0,8,0"
+        Padding="12"
+        Background="#FFF3CD"
+        BorderBrush="#F8D486"
+        BorderThickness="1"
+        CornerRadius="6"
+        Visibility="{Binding ShowElevationWarning, Converter={StaticResource BoolToVisibilityConverter}}">
+        <StackPanel
+          VerticalAlignment="Center"
+          Orientation="Horizontal"
+          Spacing="12">
+          <TextBlock
+            MaxWidth="640"
+            FontSize="12"
+            Foreground="#664D03"
+            TextWrapping="WrapWholeWords">
+            <Run Text="Running with elevated privileges (root). " />
+            <Run Text="Original user: " />
+            <Run Text="{Binding OriginalUser}" />
+            <Run Text=". Uninstalls may affect the entire system. Proceed with caution." />
+          </TextBlock>
+          <Button
+            Padding="8,4"
+            VerticalAlignment="Center"
+            Command="{Binding DismissElevationWarningCommand}"
             Content="Dismiss" />
         </StackPanel>
-      </StackPanel>
-    </Border>
+      </Border>
+      <!--  Non-elevated offer banner (macOS)  -->
+      <Border
+        Margin="8,0,8,0"
+        Padding="12"
+        Background="#E8F4FF"
+        BorderBrush="#B3DAF7"
+        BorderThickness="1"
+        CornerRadius="6"
+        Visibility="{Binding ShowElevationOffer, Converter={StaticResource BoolToVisibilityConverter}}">
+        <StackPanel
+          VerticalAlignment="Center"
+          Orientation="Horizontal"
+          Spacing="12">
+          <TextBlock
+            MaxWidth="640"
+            FontSize="12"
+            Foreground="#0A466E"
+            TextWrapping="WrapWholeWords">
+            <Run Text="Some uninstall operations may require administrator rights. " />
+            <Run Text="You can relaunch this app with elevated privileges." />
+          </TextBlock>
+          <StackPanel
+            VerticalAlignment="Center"
+            Orientation="Horizontal"
+            Spacing="8">
+            <Button
+              Padding="10,4"
+              Command="{Binding ElevateCommand}"
+              Content="Relaunch as Administrator" />
+            <Button
+              Padding="8,4"
+              Command="{Binding DismissElevationOfferCommand}"
+              Content="Dismiss" />
+          </StackPanel>
+        </StackPanel>
+      </Border>
+    </StackPanel>
     <Pivot x:Name="MainPivot" Grid.Row="1">
       <PivotItem Header="Runtimes">
         <ScrollViewer>
@@ -349,6 +373,10 @@
               Padding="12,6"
               Command="{Binding CheckUpdateNowCommand}"
               Content="Check for Updates Now" />
+            <Button
+              Padding="12,6"
+              Command="{Binding ClearCacheCommand}"
+              Content="Clear Metadata Cache" />
             <TextBlock
               FontSize="12"
               Text="{Binding UpdateMessage}"

@@ -25,7 +25,6 @@ public sealed class ChannelGroup
     public string? LatestRelevantVersion => IsSdkGroup ? LatestSdkVersion : LatestRuntimeVersion;
     public bool IsLatestRelevantInstalled => IsSdkGroup ? IsLatestSdkInstalled : IsLatestRuntimeInstalled;
     public bool ShowLatestRelevantMissing => !string.IsNullOrWhiteSpace(LatestRelevantVersion) && !IsLatestRelevantInstalled;
-    public string? LatestRelevantSummary => ShowLatestRelevantMissing ? $"Latest available: {LatestRelevantVersion}" : null;
     public string? LatestRelevantLabel => LatestRelevantVersion is null ? null : $"latest:{LatestRelevantVersion}";
 
     // Documentation links
@@ -35,7 +34,6 @@ public sealed class ChannelGroup
 
     // Backwards-compat (not used in UI after refinement)
     public bool ShowLatestMissing => ShowLatestRelevantMissing;
-    public string? LatestMissingSummary => LatestRelevantSummary;
 
     public ChannelGroup(
         string channel,

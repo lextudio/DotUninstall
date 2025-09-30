@@ -78,10 +78,18 @@ public partial class MainViewModel : ObservableObject
     [ObservableProperty]
     private string? updateMessage;
 
+    // Metadata acquisition status flags
+    [ObservableProperty]
+    private bool isUsingSnapshot; // True when data came from embedded snapshot (no network)
+
+    [ObservableProperty]
+    private bool isUsingCachedLive; // True when data served from on-disk cached JSON within TTL
+
     public IAsyncRelayCommand RefreshCommand { get; }
     public IAsyncRelayCommand<DotnetInstallEntry> UninstallCommand { get; }
     public IAsyncRelayCommand BrowseCommand { get; }
     public IAsyncRelayCommand CheckUpdateNowCommand { get; }
+    public IAsyncRelayCommand ClearCacheCommand { get; }
 
     public string Title { get; }
     public string AppVersion => GetCurrentVersion();
@@ -93,7 +101,8 @@ public partial class MainViewModel : ObservableObject
         RefreshCommand = new AsyncRelayCommand(RefreshAsync);
         UninstallCommand = new AsyncRelayCommand<DotnetInstallEntry>(UninstallAsync, _ => HasUninstallTool);
         BrowseCommand = new AsyncRelayCommand(BrowseAsync);
-    CheckUpdateNowCommand = new AsyncRelayCommand(ForceCheckForUpdatesAsync);
+        CheckUpdateNowCommand = new AsyncRelayCommand(ForceCheckForUpdatesAsync);
+        ClearCacheCommand = new AsyncRelayCommand(ClearCacheAsync);
         SdkItems.CollectionChanged += (_, __) =>
         {
             OnPropertyChanged(nameof(SdkCount));
@@ -301,7 +310,7 @@ public partial class MainViewModel : ObservableObject
 
     private async Task EnsureMetadataAsync(HashSet<string> neededChannels)
     {
-        // Refresh cache every 12 hours
+        // Refresh in-memory cache every 12 hours
         if (_channelCache != null && (DateTime.UtcNow - _metaCacheTime) < TimeSpan.FromHours(12))
         {
             // If cache already contains all needed channels, we are done
@@ -309,12 +318,84 @@ public partial class MainViewModel : ObservableObject
         }
 
         _channelCache ??= new();
-        using var http = new HttpClient();
-        ReleasesIndexRoot? indexRoot;
-        using (var s = await http.GetStreamAsync(ReleaseMetadataIndex))
+        ReleasesIndexRoot? indexRoot = null;
+        bool usedSnapshot = false;
+        bool usedDiskCache = false;
+
+        // Determine disk cache paths
+        string? cacheDir = null;
+        try
         {
-            indexRoot = await JsonSerializer.DeserializeAsync<ReleasesIndexRoot>(s, new JsonSerializerOptions(JsonSerializerDefaults.Web));
+            var baseDir = Environment.GetFolderPath(Environment.SpecialFolder.ApplicationData);
+            if (!string.IsNullOrWhiteSpace(baseDir))
+            {
+                cacheDir = System.IO.Path.Combine(baseDir, "dotnet-uninstall-ui", "cache");
+                System.IO.Directory.CreateDirectory(cacheDir);
+            }
         }
+        catch { cacheDir = null; }
+
+        var indexCachePath = cacheDir is null ? null : System.IO.Path.Combine(cacheDir, "releases-index.json");
+    TimeSpan diskTtl = TimeSpan.FromDays(1); // TTL for disk cached live results (was 6h)
+
+        // Try disk cache first (fresh enough)
+        if (indexCachePath != null && System.IO.File.Exists(indexCachePath))
+        {
+            try
+            {
+                var age = DateTime.UtcNow - System.IO.File.GetLastWriteTimeUtc(indexCachePath);
+                if (age < diskTtl)
+                {
+                    var json = await System.IO.File.ReadAllTextAsync(indexCachePath);
+                    indexRoot = JsonSerializer.Deserialize<ReleasesIndexRoot>(json, new JsonSerializerOptions(JsonSerializerDefaults.Web));
+                    if (indexRoot != null) usedDiskCache = true;
+                }
+            }
+            catch { }
+        }
+
+        // If not served from disk cache attempt live network
+        if (indexRoot == null)
+        {
+            try
+            {
+                using var http = new HttpClient();
+                using var s = await http.GetStreamAsync(ReleaseMetadataIndex);
+                indexRoot = await JsonSerializer.DeserializeAsync<ReleasesIndexRoot>(s, new JsonSerializerOptions(JsonSerializerDefaults.Web));
+                // Write to disk cache
+                if (indexRoot != null && indexCachePath != null)
+                {
+                    try
+                    {
+                        var json = JsonSerializer.Serialize(indexRoot, new JsonSerializerOptions(JsonSerializerDefaults.Web));
+                        await System.IO.File.WriteAllTextAsync(indexCachePath, json);
+                    }
+                    catch { }
+                }
+            }
+            catch { }
+        }
+
+        // Fallback to embedded snapshot if still null
+        if (indexRoot == null)
+        {
+            try
+            {
+                var asm = typeof(MainViewModel).Assembly;
+                var snapshotName = asm.GetManifestResourceNames().FirstOrDefault(n => n.EndsWith("MetadataSnapshot.releases-index.json", StringComparison.OrdinalIgnoreCase));
+                if (snapshotName != null)
+                {
+                    using var rs = asm.GetManifestResourceStream(snapshotName);
+                    if (rs != null)
+                    {
+                        indexRoot = await JsonSerializer.DeserializeAsync<ReleasesIndexRoot>(rs, new JsonSerializerOptions(JsonSerializerDefaults.Web));
+                        usedSnapshot = indexRoot != null;
+                    }
+                }
+            }
+            catch { }
+        }
+
         if (indexRoot?.ReleasesIndex == null) return;
 
         var indexLookup = indexRoot.ReleasesIndex
@@ -327,8 +408,73 @@ public partial class MainViewModel : ObservableObject
             if (!indexLookup.TryGetValue(ch, out var ci) || string.IsNullOrWhiteSpace(ci.ReleasesJson)) continue;
             try
             {
-                using var rs = await http.GetStreamAsync(ci.ReleasesJson);
-                var rels = await JsonSerializer.DeserializeAsync<ChannelReleases>(rs, new JsonSerializerOptions(JsonSerializerDefaults.Web));
+                ChannelReleases? rels = null;
+                if (!usedSnapshot)
+                {
+                    try
+                    {
+                        ChannelReleases? diskCached = null;
+                        string? channelCachePath = null;
+                        if (cacheDir != null)
+                        {
+                            channelCachePath = System.IO.Path.Combine(cacheDir, $"channel-{ch}.json");
+                            if (System.IO.File.Exists(channelCachePath))
+                            {
+                                try
+                                {
+                                    var age = DateTime.UtcNow - System.IO.File.GetLastWriteTimeUtc(channelCachePath);
+                                    if (age < diskTtl)
+                                    {
+                                        var cachedJson = await System.IO.File.ReadAllTextAsync(channelCachePath);
+                                        diskCached = JsonSerializer.Deserialize<ChannelReleases>(cachedJson, new JsonSerializerOptions(JsonSerializerDefaults.Web));
+                                        if (diskCached != null) usedDiskCache = true;
+                                    }
+                                }
+                                catch { }
+                            }
+                        }
+                        if (diskCached != null)
+                        {
+                            rels = diskCached;
+                        }
+                        else
+                        {
+                            using var http = new HttpClient();
+                            using var rs = await http.GetStreamAsync(ci.ReleasesJson);
+                            rels = await JsonSerializer.DeserializeAsync<ChannelReleases>(rs, new JsonSerializerOptions(JsonSerializerDefaults.Web));
+                            if (rels != null && channelCachePath != null)
+                            {
+                                try
+                                {
+                                    var json = JsonSerializer.Serialize(rels, new JsonSerializerOptions(JsonSerializerDefaults.Web));
+                                    await System.IO.File.WriteAllTextAsync(channelCachePath, json);
+                                }
+                                catch { }
+                            }
+                        }
+                    }
+                    catch { /* will attempt snapshot below */ }
+                }
+                if (rels == null)
+                {
+                    // Attempt snapshot file: replace domain path with local resource naming convention
+                    // Expect file name like 'releases-index' provides channel 'x.y' file pattern maybe not shipped; skip if unavailable
+                    var asm = typeof(MainViewModel).Assembly;
+                    var channelToken = ch.Replace('.', '_');
+                    var resourceName = asm.GetManifestResourceNames().FirstOrDefault(n => n.Contains($"MetadataSnapshot.{channelToken}", StringComparison.OrdinalIgnoreCase) && n.EndsWith(".json", StringComparison.OrdinalIgnoreCase));
+                    if (resourceName != null)
+                    {
+                        try
+                        {
+                            using var rs2 = asm.GetManifestResourceStream(resourceName);
+                            if (rs2 != null)
+                            {
+                                rels = await JsonSerializer.DeserializeAsync<ChannelReleases>(rs2, new JsonSerializerOptions(JsonSerializerDefaults.Web));
+                            }
+                        }
+                        catch { }
+                    }
+                }
                 var resolved = new ChannelResolved
                 {
                     ReleaseType = ci.ReleaseType?.ToLowerInvariant(),
@@ -366,6 +512,32 @@ public partial class MainViewModel : ObservableObject
             catch { /* ignore per-channel errors */ }
         }
         _metaCacheTime = DateTime.UtcNow;
+        IsUsingSnapshot = usedSnapshot;
+        IsUsingCachedLive = !usedSnapshot && usedDiskCache;
+    }
+
+    private async Task ClearCacheAsync()
+    {
+        if (IsLoading) return;
+        try
+        {
+            var baseDir = Environment.GetFolderPath(Environment.SpecialFolder.ApplicationData);
+            if (!string.IsNullOrWhiteSpace(baseDir))
+            {
+                var cacheDir = System.IO.Path.Combine(baseDir, "dotnet-uninstall-ui", "cache");
+                if (System.IO.Directory.Exists(cacheDir))
+                {
+                    System.IO.Directory.Delete(cacheDir, true);
+                }
+            }
+        }
+        catch { /* ignore errors deleting cache */ }
+        _channelCache = null;
+        _metaCacheTime = DateTime.MinValue;
+        IsUsingCachedLive = false;
+        IsUsingSnapshot = false;
+        StatusMessage = "Cache cleared. Refreshing...";
+        await RefreshAsync();
     }
 
     // TagEntriesAsync removed; tagging now performed during initial list parsing for better Uno binding behavior.

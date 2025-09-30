@@ -4,7 +4,6 @@
 
 ![GitHub all releases](https://img.shields.io/github/downloads/lextudio/DotUninstall/total?label=Downloads&logo=github)
 
-
 A minimalist cross‑platform (Windows / macOS) graphical user interface that wraps the official `dotnet-core-uninstall` command‑line utility from Microsoft.
 
 > This project is a community UI helper. It is **not** an official Microsoft application. Uninstalling SDKs/runtimes can impact existing projects—read the safety notes below.
@@ -89,6 +88,12 @@ Strings are currently inline. Future enhancement: move UI labels and status mess
 - Optional confirmation dialog before uninstall.
 - Light telemetry (opt-in) for which commands are used (never collecting personal data).
 - Linux support.
+
+## Offline / Cached Metadata
+
+The app enriches entries with lifecycle & latest info. In offline or restricted environments it falls back to an embedded snapshot and/or a local disk cache. See the contributor documentation for full details, update scripts, cache TTL, and CI automation:
+
+- [docs/offline-metadata.md](./docs/offline-metadata.md)
 
 ## Contributing
 

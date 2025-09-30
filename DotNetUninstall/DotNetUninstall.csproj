@@ -59,6 +59,10 @@
     <ProjectReference Include="..\Tooling\UninstallTooling.csproj" />
   </ItemGroup>
 
+  <ItemGroup>
+    <EmbeddedResource Include="MetadataSnapshot\**\*.json" />
+  </ItemGroup>
+
   <PropertyGroup Condition="'$(Configuration)'=='Debug' or '$(IsUiAutomationMappingEnabled)'=='True'">
     <IsUiAutomationMappingEnabled>True</IsUiAutomationMappingEnabled>
     <DefineConstants>$(DefineConstants);USE_UITESTS</DefineConstants>

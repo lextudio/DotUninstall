@@ -1,0 +1,49 @@
+name: Update Metadata Snapshot
+
+on:
+  workflow_dispatch:
+  schedule:
+    # Biweekly at 02:30 UTC on the 1st and 15th of each month
+    - cron: '30 2 1,15 * *'
+
+permissions:
+  contents: write  # needed to push updated snapshot files
+  actions: read
+
+concurrency:
+  group: update-metadata-snapshot
+  cancel-in-progress: false
+
+jobs:
+  refresh:
+    name: Refresh Snapshot
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - name: Run snapshot update script
+        shell: pwsh
+        run: |
+          ./scripts/update-metadata-snapshot.ps1 -Force
+
+      - name: Show diff
+        run: |
+          git status --short || true
+          git diff --name-only || true
+
+      - name: Commit & push if changed
+        shell: bash
+        run: |
+          if [[ -n $(git status --porcelain DotNetUninstall/MetadataSnapshot) ]]; then
+            git config user.name 'github-actions[bot]'
+            git config user.email '41898282+github-actions[bot]@users.noreply.github.com'
+            git add DotNetUninstall/MetadataSnapshot/*.json
+            ts=$(date -u +'%Y-%m-%dT%H:%M:%SZ')
+            git commit -m "chore(snapshot): refresh metadata $ts"
+            git push
+          else
+            echo "No snapshot changes detected."
+          fi
