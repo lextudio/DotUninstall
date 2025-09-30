@@ -30,21 +30,40 @@
             <StackPanel Margin="6,6,0,4" Orientation="Horizontal" Spacing="6">
               <!-- Release Type badge -->
               <Border Padding="6,2" CornerRadius="4" Background="#0E5A8A" Visibility="{Binding ReleaseType, Converter={StaticResource NullToVisibilityConverter}}">
-                <TextBlock FontSize="11" Foreground="White" FontWeight="SemiBold" Text="{Binding ReleaseType}" />
+                <StackPanel Orientation="Horizontal" Spacing="4" VerticalAlignment="Center">
+                  <TextBlock FontSize="11" Foreground="White" FontWeight="SemiBold" Text="{Binding ReleaseType}" />
+                  <Button Width="18" Height="18" Padding="0" CornerRadius="9" Background="White" BorderThickness="0" ToolTipService.ToolTip="Learn more" Tag="{Binding ReleaseTypeInfoUrl}" Click="OnOpenChannelDownload">
+                    <TextBlock Text="i" FontSize="10" Foreground="#0E5A8A" FontWeight="Bold" HorizontalAlignment="Center" VerticalAlignment="Center" />
+                  </Button>
+                </StackPanel>
               </Border>
               <!-- Support Phase badge -->
               <Border Padding="6,2" CornerRadius="4" Background="#556270" Visibility="{Binding SupportPhase, Converter={StaticResource NullToVisibilityConverter}}">
-                <TextBlock FontSize="11" Foreground="White" Text="{Binding SupportPhase}" />
+                <StackPanel Orientation="Horizontal" Spacing="4" VerticalAlignment="Center">
+                  <TextBlock FontSize="11" Foreground="White" Text="{Binding SupportPhase}" />
+                  <Button Width="18" Height="18" Padding="0" CornerRadius="9" Background="White" BorderThickness="0" ToolTipService.ToolTip="Learn more" Tag="{Binding SupportPhaseInfoUrl}" Click="OnOpenChannelDownload">
+                    <TextBlock Text="i" FontSize="10" Foreground="#556270" FontWeight="Bold" HorizontalAlignment="Center" VerticalAlignment="Center" />
+                  </Button>
+                </StackPanel>
               </Border>
               <!-- EOL badge -->
               <Border Padding="6,2" CornerRadius="4" Background="#8A2D3C" Visibility="{Binding EolBadge, Converter={StaticResource NullToVisibilityConverter}}" ToolTipService.ToolTip="{Binding EolDisplay}">
-                <TextBlock FontSize="11" Foreground="White" FontWeight="SemiBold" Text="{Binding EolBadge}" />
+                <StackPanel Orientation="Horizontal" Spacing="4" VerticalAlignment="Center">
+                  <TextBlock FontSize="11" Foreground="White" FontWeight="SemiBold" Text="{Binding EolBadge}" />
+                  <Button Width="18" Height="18" Padding="0" CornerRadius="9" Background="White" BorderThickness="0" ToolTipService.ToolTip="Learn more" Tag="{Binding EolInfoUrl}" Click="OnOpenChannelDownload" Visibility="{Binding EolInfoUrl, Converter={StaticResource NullToVisibilityConverter}}">
+                    <TextBlock Text="i" FontSize="10" Foreground="#8A2D3C" FontWeight="Bold" HorizontalAlignment="Center" VerticalAlignment="Center" />
+                  </Button>
+                </StackPanel>
               </Border>
-              <!-- Latest version badge (show even if installed? only if missing per requirement) -->
+              <!-- Latest version badge with circular info button (only when missing) -->
               <Border Padding="6,2" CornerRadius="4" Background="#1F6F50" Visibility="{Binding ShowLatestRelevantMissing, Converter={StaticResource BoolToVisibilityConverter}}">
+                <StackPanel Orientation="Horizontal" Spacing="4" VerticalAlignment="Center">
                   <TextBlock FontSize="11" Foreground="White" Text="{Binding LatestRelevantLabel}" />
+                  <Button Width="18" Height="18" Padding="0" Background="White" BorderThickness="0" CornerRadius="9" ToolTipService.ToolTip="Learn more" Tag="{Binding ChannelDownloadUrl}" Click="OnOpenChannelDownload">
+                    <TextBlock Text="i" FontSize="11" Foreground="#1F6F50" FontWeight="Bold" HorizontalAlignment="Center" VerticalAlignment="Center" />
+                  </Button>
+                </StackPanel>
               </Border>
-              <Button Padding="4,0" Content="Learn more" Tag="{Binding ChannelDownloadUrl}" Click="OnOpenChannelDownload" Visibility="{Binding ShowLatestRelevantMissing, Converter={StaticResource BoolToVisibilityConverter}}" />
             </StackPanel>
             <ListView ItemTemplate="{StaticResource InstallEntryTemplate}" ItemsSource="{Binding Items}" SelectionMode="None" />
           </StackPanel>
@@ -77,17 +96,6 @@
             VerticalAlignment="Center"
             Orientation="Horizontal"
             Spacing="4">
-            <!--  Release type (LTS/STS)  -->
-            <Border
-              Padding="4,2"
-              Background="#0E5A8A"
-              CornerRadius="4"
-              Visibility="{Binding ReleaseType, Converter={StaticResource NullToVisibilityConverter}}">
-              <TextBlock
-                FontSize="11"
-                Foreground="White"
-                Text="{Binding ReleaseType}" />
-            </Border>
             <!--  Preview kind badges  -->
             <Border
               Padding="4,2"

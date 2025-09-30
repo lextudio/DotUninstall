@@ -28,6 +28,11 @@ public sealed class ChannelGroup
     public string? LatestRelevantSummary => ShowLatestRelevantMissing ? $"Latest available: {LatestRelevantVersion}" : null;
     public string? LatestRelevantLabel => LatestRelevantVersion is null ? null : $"latest:{LatestRelevantVersion}";
 
+    // Documentation links
+    public string? ReleaseTypeInfoUrl => ReleaseType is null ? null : "https://learn.microsoft.com/lifecycle/faq/dotnet-core";
+    public string? SupportPhaseInfoUrl => SupportPhase is null ? null : "https://dotnet.microsoft.com/platform/support/policy/dotnet-core";
+    public string? EolInfoUrl => EolDate.HasValue ? "https://learn.microsoft.com/lifecycle/products/microsoft-net-and-net-core" : null;
+
     // Backwards-compat (not used in UI after refinement)
     public bool ShowLatestMissing => ShowLatestRelevantMissing;
     public string? LatestMissingSummary => LatestRelevantSummary;
