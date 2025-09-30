@@ -12,6 +12,45 @@
       </ResourceDictionary.MergedDictionaries>
 
       <!-- Add resources here -->
+  <!-- Badge Color Palette (higher contrast & cohesive) -->
+  <!-- Blues (Release Type) -->
+  <SolidColorBrush x:Key="Badge.Release.Label" Color="#0B4F73" />
+  <SolidColorBrush x:Key="Badge.Release.Value" Color="#1390D4" />
+
+  <!-- Neutral Support -->
+  <SolidColorBrush x:Key="Badge.Support.Label" Color="#394148" />
+  <SolidColorBrush x:Key="Badge.Support.Value" Color="#56616B" />
+
+  <!-- EOL (Reds) -->
+  <SolidColorBrush x:Key="Badge.Eol.Label" Color="#7B1F2B" />
+  <SolidColorBrush x:Key="Badge.Eol.Value" Color="#C23B4E" />
+
+  <!-- Latest Missing (Green) -->
+  <SolidColorBrush x:Key="Badge.Latest.Label" Color="#0E5A3C" />
+  <SolidColorBrush x:Key="Badge.Latest.Value" Color="#1D8A5B" />
+
+  <!-- Stage (Prerelease / GA) -->
+  <SolidColorBrush x:Key="Badge.Stage.Label" Color="#283342" />
+  <SolidColorBrush x:Key="Badge.Stage.Value" Color="#3C4C60" />
+
+  <!-- Security -->
+  <SolidColorBrush x:Key="Badge.Security.Label" Color="#6B1F29" />
+  <SolidColorBrush x:Key="Badge.Security.Value" Color="#A1293D" />
+
+  <!-- Architecture -->
+  <SolidColorBrush x:Key="Badge.Arch.Label" Color="#20323D" />
+  <SolidColorBrush x:Key="Badge.Arch.Value" Color="#32505F" />
+
+  <!-- SubType -->
+  <SolidColorBrush x:Key="Badge.SubType.Label" Color="#2B2F40" />
+  <SolidColorBrush x:Key="Badge.SubType.Value" Color="#41465A" />
+
+  <!-- Removable / State -->
+  <SolidColorBrush x:Key="Badge.State.Label" Color="#0F4C37" />
+  <SolidColorBrush x:Key="Badge.State.Value" Color="#177554" />
+
+  <!-- Reason (single segment) -->
+  <SolidColorBrush x:Key="Badge.Reason.Background" Color="#4E5963" />
 
     </ResourceDictionary>
   </Application.Resources>

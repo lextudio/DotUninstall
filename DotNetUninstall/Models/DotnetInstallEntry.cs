@@ -21,6 +21,14 @@ public partial record DotnetInstallEntry
     public int? PreviewNumber { get; init; }         // e.g. 3 for -preview.3 or -rc.3
     public bool IsSecurityUpdate { get; init; }
     public DateTime? EolDate { get; init; }         // official end of life (channel) if provided
+    public bool IsGa => PreviewKind == "ga";        // convenience flag
+    public string? PreviewKindDisplay => PreviewKind switch
+    {
+        "preview" => "Preview",
+        "rc" => "RC",
+        "ga" => "GA",
+        _ => PreviewKind
+    };
     // Internal uninstall command (not shown in UI) when using embedded logic instead of external tool
     public string? UninstallCommand { get; init; }
     public string? DisplayName { get; init; }

@@ -12,6 +12,7 @@ public sealed class ChannelGroup
     public DateTime? EolDate { get; }
     public string? EolDisplay => EolDate.HasValue ? $"End of life {EolDate:yyyy-MM-dd}" : null;
     public string? EolBadge => EolDate.HasValue ? $"EOL:{EolDate:yyyy-MM-dd}" : null;
+    public string? EolDateValue => EolDate.HasValue ? EolDate.Value.ToString("yyyy-MM-dd") : null; // For two-segment badge (label|value)
     public string LifecycleState { get; }  // eol | expiring | supported
     public bool IsExpiringSoon => LifecycleState == "expiring";
     public bool IsEol => LifecycleState == "eol";
