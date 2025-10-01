@@ -55,7 +55,7 @@ To reduce network calls and provide resilience, live metadata is cached:
 
 - Disk cache directory: `%AppData%/dotnet-uninstall-ui/cache` (platform‑appropriate path).
 - Files: `releases-index.json` plus `channel-<major.minor>.json` for each used channel.
-- TTL: 24 hours (previously 6h).
+- TTL: 24 hours.
 - In‑memory cache also exists (12h) for the active session.
 
 Indicators in the UI:

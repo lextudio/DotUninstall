@@ -384,7 +384,7 @@
           <TextBlock
             FontSize="12"
             Foreground="#0A466E"
-            Text="Showing cached live metadata (may be up to 6h old)." />
+            Text="On cached live metadata." />
         </StackPanel>
       </Border>
       <!--  Update available banner  -->

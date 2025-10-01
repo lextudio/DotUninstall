@@ -336,7 +336,7 @@ public partial class MainViewModel : ObservableObject
         catch { cacheDir = null; }
 
         var indexCachePath = cacheDir is null ? null : System.IO.Path.Combine(cacheDir, "releases-index.json");
-    TimeSpan diskTtl = TimeSpan.FromDays(1); // TTL for disk cached live results (was 6h)
+        TimeSpan diskTtl = TimeSpan.FromDays(1); // TTL for disk cached live results
 
         // Try disk cache first (fresh enough)
         if (indexCachePath != null && System.IO.File.Exists(indexCachePath))
