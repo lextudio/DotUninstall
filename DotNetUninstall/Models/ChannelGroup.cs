@@ -16,6 +16,11 @@ public sealed class ChannelGroup
     public string LifecycleState { get; }  // eol | expiring | supported
     public bool IsExpiringSoon => LifecycleState == "expiring";
     public bool IsEol => LifecycleState == "eol";
+    // MAUI-specific lifecycle (scraped separately)
+    public DateTime? MauiEolDate { get; }
+    public string? MauiEolBadge => MauiEolDate.HasValue ? $"MAUI EOL:{MauiEolDate:yyyy-MM-dd}" : null;
+    public string? MauiEolDateValue => MauiEolDate.HasValue ? MauiEolDate.Value.ToString("yyyy-MM-dd") : null;
+    public string? MauiEolInfoUrl => MauiEolDate.HasValue ? "https://dotnet.microsoft.com/platform/support/policy/maui" : null;
     public string? LatestSdkVersion { get; }
     public string? LatestRuntimeVersion { get; }
     public bool IsLatestSdkInstalled { get; }
@@ -42,6 +47,7 @@ public sealed class ChannelGroup
         string? releaseType,
         string? supportPhase,
         DateTime? eolDate,
+        DateTime? mauiEolDate,
         string? latestSdkVersion,
         string? latestRuntimeVersion,
         bool isSdkGroup)
@@ -50,7 +56,8 @@ public sealed class ChannelGroup
 
         // Order items by semantic version descending (stable > prerelease when equal core, higher patch first)
         var ordered = items
-            .Select(i => {
+            .Select(i =>
+            {
                 NuGetVersion? v = NuGetVersion.TryParse(i.Version, out var parsed) ? parsed : null;
                 return (entry: i, version: v);
             })
@@ -63,6 +70,7 @@ public sealed class ChannelGroup
         ReleaseType = releaseType;
         SupportPhase = supportPhase;
         EolDate = eolDate;
+        MauiEolDate = mauiEolDate;
         LatestSdkVersion = latestSdkVersion;
         LatestRuntimeVersion = latestRuntimeVersion;
         IsSdkGroup = isSdkGroup;

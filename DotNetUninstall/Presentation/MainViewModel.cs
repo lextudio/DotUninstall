@@ -3,18 +3,18 @@ using System.Collections.Specialized;
 using System.Diagnostics;
 using System.Runtime.InteropServices;
 using System.Text.Json;
-using System.Text.RegularExpressions;
 using System.Text.Json.Serialization; // For JsonPropertyName attributes mapping kebab-case properties
+using System.Text.RegularExpressions;
 using CommunityToolkit.Mvvm.ComponentModel;
 using CommunityToolkit.Mvvm.Input;
 using DotNetUninstall.Models;
 using Microsoft.Extensions.Localization;
 using Microsoft.Extensions.Options;
+using Mono.Unix.Native; // Mono.Posix for elevation detection
 using NuGet.Versioning;
+using Octokit;
 using Uno.Extensions.Navigation;
 using Windows.Foundation.Metadata;
-using Mono.Unix.Native; // Mono.Posix for elevation detection
-using Octokit;
 
 namespace DotNetUninstall.Presentation;
 
@@ -267,6 +267,40 @@ public partial class MainViewModel : ObservableObject
         public HashSet<string> SecurityVersions { get; } = new(StringComparer.OrdinalIgnoreCase);
         public string? LatestSdk { get; set; }
         public string? LatestRuntime { get; set; }
+        public DateTime? MauiEolDate { get; set; }
+    }
+
+    private static Dictionary<string, DateTime?>? _mauiLifecycle; // channel -> eolDate
+    private static bool _mauiLifecycleLoaded;
+    private static void EnsureMauiLifecycleLoaded()
+    {
+        if (_mauiLifecycleLoaded) return;
+        _mauiLifecycleLoaded = true;
+        try
+        {
+            var asm = typeof(MainViewModel).Assembly;
+            var res = asm.GetManifestResourceNames().FirstOrDefault(n => n.EndsWith("MetadataSnapshot.maui-lifecycle.json", StringComparison.OrdinalIgnoreCase));
+            if (res == null) return;
+            using var s = asm.GetManifestResourceStream(res);
+            if (s == null) return;
+            using var doc = JsonDocument.Parse(s);
+            var dict = new Dictionary<string, DateTime?>(StringComparer.OrdinalIgnoreCase);
+            if (doc.RootElement.TryGetProperty("entries", out var entries) && entries.ValueKind == JsonValueKind.Array)
+            {
+                foreach (var e in entries.EnumerateArray())
+                {
+                    var channel = e.TryGetProperty("channel", out var chEl) ? chEl.GetString() : null;
+                    DateTime? eol = null;
+                    if (e.TryGetProperty("eolDate", out var eolEl) && eolEl.ValueKind == JsonValueKind.String)
+                    {
+                        if (DateTime.TryParse(eolEl.GetString(), out var parsed)) eol = parsed.Date;
+                    }
+                    if (!string.IsNullOrWhiteSpace(channel)) dict[channel!] = eol;
+                }
+            }
+            _mauiLifecycle = dict;
+        }
+        catch { }
     }
 
     private static string DeriveChannel(string version)
@@ -681,7 +715,10 @@ public partial class MainViewModel : ObservableObject
                 var rt = first?.ReleaseType?.ToUpperInvariant();
                 ChannelResolved? cr = null;
                 _channelCache?.TryGetValue(grp.Key!, out cr);
-                GroupedSdkItems.Add(new ChannelGroup(grp.Key!, grp, rt, first?.SupportPhase, first?.EolDate, cr?.LatestSdk, cr?.LatestRuntime, isSdkGroup: true));
+                EnsureMauiLifecycleLoaded();
+                DateTime? mauiEol = null;
+                if (_mauiLifecycle != null && grp.Key != null && _mauiLifecycle.TryGetValue(grp.Key, out var mdt)) mauiEol = mdt;
+                GroupedSdkItems.Add(new ChannelGroup(grp.Key!, grp, rt, first?.SupportPhase, first?.EolDate, mauiEol, cr?.LatestSdk, cr?.LatestRuntime, isSdkGroup: true));
             }
         }
         if (RuntimeItems.Count > 0)
@@ -692,7 +729,10 @@ public partial class MainViewModel : ObservableObject
                 var rt2 = first?.ReleaseType?.ToUpperInvariant();
                 ChannelResolved? cr2 = null;
                 _channelCache?.TryGetValue(grp.Key!, out cr2);
-                GroupedRuntimeItems.Add(new ChannelGroup(grp.Key!, grp, rt2, first?.SupportPhase, first?.EolDate, cr2?.LatestSdk, cr2?.LatestRuntime, isSdkGroup: false));
+                EnsureMauiLifecycleLoaded();
+                DateTime? mauiEol2 = null;
+                if (_mauiLifecycle != null && grp.Key != null && _mauiLifecycle.TryGetValue(grp.Key, out var mdt2)) mauiEol2 = mdt2;
+                GroupedRuntimeItems.Add(new ChannelGroup(grp.Key!, grp, rt2, first?.SupportPhase, first?.EolDate, mauiEol2, cr2?.LatestSdk, cr2?.LatestRuntime, isSdkGroup: false));
             }
         }
         OnPropertyChanged(nameof(GroupedSdkItems));
@@ -798,7 +838,7 @@ public partial class MainViewModel : ObservableObject
 
     private static bool TryParseVersion(string? text, out NuGetVersion version)
     {
-        version = new NuGetVersion(0,0,0);
+        version = new NuGetVersion(0, 0, 0);
         if (string.IsNullOrWhiteSpace(text)) return false;
         if (text.StartsWith('v')) text = text[1..];
         if (!NuGetVersion.TryParse(text, out var parsed) || parsed is null)

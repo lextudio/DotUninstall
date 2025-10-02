@@ -28,6 +28,7 @@ jobs:
         shell: pwsh
         run: |
           ./scripts/update-metadata-snapshot.ps1 -Force
+          ./scripts/update-maui-lifecycle.ps1
 
       - name: Show diff
         run: |
@@ -42,7 +43,7 @@ jobs:
             git config user.email '41898282+github-actions[bot]@users.noreply.github.com'
             git add DotNetUninstall/MetadataSnapshot/*.json
             ts=$(date -u +'%Y-%m-%dT%H:%M:%SZ')
-            git commit -m "chore(snapshot): refresh metadata $ts"
+            git commit -m "chore(snapshot): refresh metadata (dotnet + maui) $ts"
             git push
           else
             echo "No snapshot changes detected."

@@ -25,6 +25,10 @@
   <SolidColorBrush x:Key="Badge.Eol.Label" Color="#7B1F2B" />
   <SolidColorBrush x:Key="Badge.Eol.Value" Color="#C23B4E" />
 
+  <!-- MAUI EOL (Purple accent) -->
+  <SolidColorBrush x:Key="Badge.MauiEol.Label" Color="#4B2D6B" />
+  <SolidColorBrush x:Key="Badge.MauiEol.Value" Color="#6E43A6" />
+
   <!-- Latest Missing (Green) -->
   <SolidColorBrush x:Key="Badge.Latest.Label" Color="#0E5A3C" />
   <SolidColorBrush x:Key="Badge.Latest.Value" Color="#1D8A5B" />
