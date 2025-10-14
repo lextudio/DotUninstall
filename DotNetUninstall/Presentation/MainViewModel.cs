@@ -216,7 +216,9 @@ public partial class MainViewModel : ObservableObject
                     IsSecurityUpdate = isSecurity,
                     EolDate = meta?.EolDate,
                     SecurityStatus = securityStatus,
-                    SecurityTooltip = securityTooltip
+                    SecurityTooltip = securityTooltip,
+                    ReleaseDate = ResolveReleaseDate(meta, baseEntry.Version),
+                    ReleaseNotesUrl = ResolveReleaseNotes(meta, baseEntry.Version)
                 };
             }
             catch { }
@@ -255,6 +257,8 @@ public partial class MainViewModel : ObservableObject
     private sealed class ChannelRelease
     {
         [JsonPropertyName("release-version")] public string? ReleaseVersion { get; set; }
+        [JsonPropertyName("release-date")] public DateTime? ReleaseDate { get; set; }
+        [JsonPropertyName("release-notes")] public string? ReleaseNotes { get; set; }
         public bool? Security { get; set; }
         public SdkRelease? Sdk { get; set; }
         public List<SdkRelease>? Sdks { get; set; }
@@ -279,6 +283,9 @@ public partial class MainViewModel : ObservableObject
         public DateTime? MauiEolDate { get; set; }
         public string? LatestSecuritySdk { get; set; }
         public string? LatestSecurityRuntime { get; set; }
+        // Per-version release date & notes
+        public Dictionary<string, DateTime?> ReleaseDates { get; } = new(StringComparer.OrdinalIgnoreCase);
+        public Dictionary<string, string?> ReleaseNotes { get; } = new(StringComparer.OrdinalIgnoreCase);
         // Map version -> CVE ids (flattened), union stored in AllCves
         public Dictionary<string, List<string>> VersionCves { get; } = new(StringComparer.OrdinalIgnoreCase);
         public HashSet<string> AllCves { get; } = new(StringComparer.OrdinalIgnoreCase);
@@ -354,6 +361,20 @@ public partial class MainViewModel : ObservableObject
         int? num2 = null;
         if (m.Groups["n"].Success && int.TryParse(m.Groups["n"].Value, out var parsed2)) num2 = parsed2;
         return (m.Groups[1].Value, num2);
+    }
+
+    private static DateTime? ResolveReleaseDate(ChannelResolved? meta, string version)
+    {
+        if (meta == null) return null;
+        if (meta.ReleaseDates.TryGetValue(version, out var dt)) return dt;
+        return null;
+    }
+
+    private static string? ResolveReleaseNotes(ChannelResolved? meta, string version)
+    {
+        if (meta == null) return null;
+        if (meta.ReleaseNotes.TryGetValue(version, out var rn)) return rn;
+        return null;
     }
 
     private async Task EnsureMetadataAsync(HashSet<string> neededChannels)
@@ -531,13 +552,21 @@ public partial class MainViewModel : ObservableObject
                 };
                 if (rels?.Releases != null)
                 {
-                    // We want highest (latest) stable versions; use NuGetVersion ordering
-                    NuGetVersion? maxSdk = null;
-                    NuGetVersion? maxRuntime = null;
-                    NuGetVersion? maxSecSdk = null;
-                    NuGetVersion? maxSecRuntime = null;
+                    int dbgTotalReleases = 0;
+                    int dbgWithDate = 0;
+                    // We prefer highest stable (non-prerelease) versions; if none exist for a channel (e.g., during preview / RC)
+                    // we fallback to the highest prerelease so the UI can still surface a Latest badge (e.g., 10.0.0-rc.2).
+                    NuGetVersion? maxStableSdk = null;
+                    NuGetVersion? maxStableRuntime = null;
+                    NuGetVersion? maxStableSecSdk = null;
+                    NuGetVersion? maxStableSecRuntime = null;
+                    NuGetVersion? maxAnySdk = null;
+                    NuGetVersion? maxAnyRuntime = null;
+                    NuGetVersion? maxAnySecSdk = null;       // any security (incl. prerelease)
+                    NuGetVersion? maxAnySecRuntime = null;    // any security (incl. prerelease)
                     foreach (var r in rels.Releases)
                     {
+                        dbgTotalReleases++;
                         bool sec = r.Security == true;
                         List<string>? cves = null;
                         if (sec && r is not null)
@@ -550,7 +579,7 @@ public partial class MainViewModel : ObservableObject
                         }
                         void AddSdk(string? v) { if (!string.IsNullOrWhiteSpace(v)) { resolved.SdkVersions.Add(v); if (sec) resolved.SecurityVersions.Add(v); } }
                         void AddRuntime(string? v) { if (!string.IsNullOrWhiteSpace(v)) { resolved.RuntimeVersions.Add(v); if (sec) resolved.SecurityVersions.Add(v); } }
-                        #pragma warning disable CS8602 // Analyzer false-positive: r and r.Sdk are non-null within loop scope
+                        #pragma warning disable CS8602
                         var localSdk = r.Sdk;
                         #pragma warning restore CS8602
                         if (localSdk is not null)
@@ -561,39 +590,64 @@ public partial class MainViewModel : ObservableObject
                         if (r.Sdks != null) foreach (var srel in r.Sdks) { var sv = srel.Version; if (!string.IsNullOrWhiteSpace(sv)) AddSdk(sv); }
                         var rtVerTmp = r.Runtime?.Version;
                         if (!string.IsNullOrWhiteSpace(rtVerTmp)) AddRuntime(rtVerTmp);
-                        // Track latest stable (non-prerelease) versions
+
+                        // Track latest versions (stable and any) for SDK
                         var sdkVersionString = r.Sdk?.Version;
                         if (!string.IsNullOrWhiteSpace(sdkVersionString) && NuGetVersion.TryParse(sdkVersionString, out var sdkNv))
                         {
-                            if (!sdkNv.IsPrerelease && (maxSdk == null || sdkNv > maxSdk)) maxSdk = sdkNv;
-                            if (sec && !sdkNv.IsPrerelease && (maxSecSdk == null || sdkNv > maxSecSdk)) maxSecSdk = sdkNv;
+                            if (maxAnySdk == null || sdkNv > maxAnySdk) maxAnySdk = sdkNv;
+                            if (!sdkNv.IsPrerelease && (maxStableSdk == null || sdkNv > maxStableSdk)) maxStableSdk = sdkNv;
+                            if (sec)
+                            {
+                                if (maxAnySecSdk == null || sdkNv > maxAnySecSdk) maxAnySecSdk = sdkNv;
+                                if (!sdkNv.IsPrerelease && (maxStableSecSdk == null || sdkNv > maxStableSecSdk)) maxStableSecSdk = sdkNv;
+                            }
                         }
+                        // Track latest versions (stable and any) for Runtime
                         if (r.Runtime?.Version != null && NuGetVersion.TryParse(r.Runtime.Version, out var rtNv))
                         {
-                            if (!rtNv.IsPrerelease && (maxRuntime == null || rtNv > maxRuntime)) maxRuntime = rtNv;
-                            if (sec && !rtNv.IsPrerelease && (maxSecRuntime == null || rtNv > maxSecRuntime)) maxSecRuntime = rtNv;
+                            if (maxAnyRuntime == null || rtNv > maxAnyRuntime) maxAnyRuntime = rtNv;
+                            if (!rtNv.IsPrerelease && (maxStableRuntime == null || rtNv > maxStableRuntime)) maxStableRuntime = rtNv;
+                            if (sec)
+                            {
+                                if (maxAnySecRuntime == null || rtNv > maxAnySecRuntime) maxAnySecRuntime = rtNv;
+                                if (!rtNv.IsPrerelease && (maxStableSecRuntime == null || rtNv > maxStableSecRuntime)) maxStableSecRuntime = rtNv;
+                            }
                         }
 
-                        // Parse CVE list if present in raw JSON (manual scan since we don't have strong types here)
+                        // Parse CVE list placeholder
                         if (sec)
                         {
                             try
                             {
-                                // We need the raw JSON for the release to extract cve-list; since we don't preserve it, heuristic omitted for now.
-                                // Placeholder: store empty list so structure exists.
                                 var keyVer = r.Sdk?.Version ?? r.Runtime?.Version;
-                                if (!string.IsNullOrWhiteSpace(keyVer))
-                                {
-                                    resolved.VersionCves[keyVer!] = cves ?? new List<string>();
-                                }
+                                if (!string.IsNullOrWhiteSpace(keyVer)) resolved.VersionCves[keyVer!] = cves ?? new List<string>();
                             }
                             catch { }
                         }
+                        // Track release date / notes keyed by primary version (prefer SDK version, else runtime, else channel release-version)
+                        // Capture all plausible version keys (some installed entries show shorter release-version while metadata contains full build)
+                        var keys = new HashSet<string>(StringComparer.OrdinalIgnoreCase);
+                        if (!string.IsNullOrWhiteSpace(r.Sdk?.Version)) keys.Add(r.Sdk!.Version!);
+                        if (!string.IsNullOrWhiteSpace(r.Runtime?.Version)) keys.Add(r.Runtime!.Version!);
+                        if (!string.IsNullOrWhiteSpace(r.ReleaseVersion)) keys.Add(r.ReleaseVersion!);
+                        // Some metadata includes "version-display"; attempt reflection-free extraction by scanning runtime JSON? (Not strongly typed here)
+                        // If runtime version contains a build suffix (e.g., -rc.2.25502.107) and release-version is shorter (-rc.2), our keys set already has both.
+                        foreach (var k in keys)
+                        {
+                            if (r.ReleaseDate.HasValue)
+                            {
+                                dbgWithDate++;
+                                if (!resolved.ReleaseDates.ContainsKey(k)) resolved.ReleaseDates[k] = r.ReleaseDate.Value.Date;
+                            }
+                            if (!string.IsNullOrWhiteSpace(r.ReleaseNotes) && !resolved.ReleaseNotes.ContainsKey(k)) resolved.ReleaseNotes[k] = r.ReleaseNotes;
+                        }
                     }
-                    resolved.LatestSdk = maxSdk?.ToNormalizedString();
-                    resolved.LatestRuntime = maxRuntime?.ToNormalizedString();
-                    resolved.LatestSecuritySdk = maxSecSdk?.ToNormalizedString();
-                    resolved.LatestSecurityRuntime = maxSecRuntime?.ToNormalizedString();
+                    // Apply fallback: prefer stable, else prerelease
+                    resolved.LatestSdk = (maxStableSdk ?? maxAnySdk)?.ToNormalizedString();
+                    resolved.LatestRuntime = (maxStableRuntime ?? maxAnyRuntime)?.ToNormalizedString();
+                    resolved.LatestSecuritySdk = (maxStableSecSdk ?? maxAnySecSdk)?.ToNormalizedString();
+                    resolved.LatestSecurityRuntime = (maxStableSecRuntime ?? maxAnySecRuntime)?.ToNormalizedString();
                 }
                 _channelCache[ch] = resolved;
             }

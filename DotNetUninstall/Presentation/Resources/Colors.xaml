@@ -75,6 +75,9 @@
     <!-- Stage -->
     <SolidColorBrush x:Key="Badge.Stage.Label" Color="#283342" />
     <SolidColorBrush x:Key="Badge.Stage.Value" Color="#3C4C60" />
+    <!-- Release Date -->
+    <SolidColorBrush x:Key="Badge.ReleaseDate.Label" Color="#4A2E17" />
+    <SolidColorBrush x:Key="Badge.ReleaseDate.Value" Color="#7B4A25" />
     <!-- Security (two-segment label side already replaced by dynamic security palette) -->
     <SolidColorBrush x:Key="Badge.Security.Label" Color="#6B1F29" />
     <SolidColorBrush x:Key="Badge.Security.Value" Color="#A1293D" />

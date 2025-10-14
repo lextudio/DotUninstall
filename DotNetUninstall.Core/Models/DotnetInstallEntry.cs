@@ -58,6 +58,13 @@ public partial record DotnetInstallEntry
 
     /// <summary>Tooltip describing reasoning behind security classification (may be null).</summary>
     public string? SecurityTooltip { get; init; }
+
+    /// <summary>Date this specific release was published (from release metadata), in UTC date component.</summary>
+    public DateTime? ReleaseDate { get; init; }
+    /// <summary>Convenience string (yyyy-MM-dd) for two-segment badge value; null when date unknown.</summary>
+    public string? ReleaseDateValue => ReleaseDate?.ToString("yyyy-MM-dd");
+    /// <summary>Release notes URL if provided in the metadata.</summary>
+    public string? ReleaseNotesUrl { get; init; }
 }
 
 /// <summary>
