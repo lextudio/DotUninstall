@@ -1,0 +1,92 @@
+<?xml version="1.0" encoding="utf-8" ?>
+<ResourceDictionary xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation" xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml">
+    <!--  Centralized color & brush resources  -->
+    <!--  Security badge colors  -->
+    <!--  Contrast tuned: Good (#1B5E20), Alert (#B71C1C), Warning (#C15600), Neutral (#546E7A)  -->
+    <Color x:Key="Color.Security.Good">#FF1B5E20</Color>
+    <Color x:Key="Color.Security.Alert">#FFB71C1C</Color>
+    <Color x:Key="Color.Security.Warning">#FFC15600</Color>
+    <Color x:Key="Color.Security.Neutral">#FF546E7A</Color>
+    <SolidColorBrush x:Key="Brush.Security.Good" Color="{StaticResource Color.Security.Good}" />
+    <SolidColorBrush x:Key="Brush.Security.Alert" Color="{StaticResource Color.Security.Alert}" />
+    <SolidColorBrush x:Key="Brush.Security.Warning" Color="{StaticResource Color.Security.Warning}" />
+    <SolidColorBrush x:Key="Brush.Security.Neutral" Color="{StaticResource Color.Security.Neutral}" />
+    <!--  Foregrounds kept white but expose token if future theming wants dark text on light backgrounds  -->
+    <SolidColorBrush x:Key="Brush.Security.Foreground" Color="White" />
+
+    <!--  Latest badge colors  -->
+    <!-- Latest badge colors tuned for contrast: Normal label/value use deeper blue pair, security uses deep crimson & vivid orange-red -->
+    <Color x:Key="Color.Latest.Label.Normal">#FF0A3A85</Color>
+    <Color x:Key="Color.Latest.Label.Security">#FF7F0E12</Color>
+    <Color x:Key="Color.Latest.Value.Normal">#FF1269C2</Color>
+    <Color x:Key="Color.Latest.Value.Security">#FFDA2A1B</Color>
+    <SolidColorBrush x:Key="Brush.Latest.Label.Normal" Color="{StaticResource Color.Latest.Label.Normal}" />
+    <SolidColorBrush x:Key="Brush.Latest.Label.Security" Color="{StaticResource Color.Latest.Label.Security}" />
+    <SolidColorBrush x:Key="Brush.Latest.Value.Normal" Color="{StaticResource Color.Latest.Value.Normal}" />
+    <SolidColorBrush x:Key="Brush.Latest.Value.Security" Color="{StaticResource Color.Latest.Value.Security}" />
+
+    <!--  Lifecycle state colors  -->
+    <Color x:Key="Color.Lifecycle.Eol">#FF601F1F</Color>
+    <Color x:Key="Color.Lifecycle.Expiring">#FF7F5A15</Color>
+    <Color x:Key="Color.Lifecycle.Supported">#FF1F3A52</Color>
+    <Color x:Key="Color.Lifecycle.Preview">#FF4B2F60</Color>
+    <SolidColorBrush x:Key="Brush.Lifecycle.Eol" Color="{StaticResource Color.Lifecycle.Eol}" />
+    <SolidColorBrush x:Key="Brush.Lifecycle.Expiring" Color="{StaticResource Color.Lifecycle.Expiring}" />
+    <SolidColorBrush x:Key="Brush.Lifecycle.Supported" Color="{StaticResource Color.Lifecycle.Supported}" />
+    <SolidColorBrush x:Key="Brush.Lifecycle.Preview" Color="{StaticResource Color.Lifecycle.Preview}" />
+
+    <!--  Banner colors (background/border/foreground)  -->
+    <SolidColorBrush x:Key="Brush.Banner.Snapshot.Background" Color="#FFF2F2F2" />
+    <SolidColorBrush x:Key="Brush.Banner.Snapshot.Border" Color="#FFCCCCCC" />
+    <SolidColorBrush x:Key="Brush.Banner.Snapshot.Foreground" Color="#FF444444" />
+
+    <SolidColorBrush x:Key="Brush.Banner.Cached.Background" Color="#FFEEF7FF" />
+    <SolidColorBrush x:Key="Brush.Banner.Cached.Border" Color="#FFB3DAF7" />
+    <SolidColorBrush x:Key="Brush.Banner.Cached.Foreground" Color="#FF0A466E" />
+
+    <SolidColorBrush x:Key="Brush.Banner.Update.Background" Color="#FFD1F0D1" />
+    <SolidColorBrush x:Key="Brush.Banner.Update.Border" Color="#FF7BC47B" />
+    <SolidColorBrush x:Key="Brush.Banner.Update.Foreground" Color="#FF0B3D0B" />
+
+    <SolidColorBrush x:Key="Brush.Banner.Elevation.Background" Color="#FFFFF3CD" />
+    <SolidColorBrush x:Key="Brush.Banner.Elevation.Border" Color="#FFF8D486" />
+    <SolidColorBrush x:Key="Brush.Banner.Elevation.Foreground" Color="#FF664D03" />
+
+    <SolidColorBrush x:Key="Brush.Banner.NonElevated.Background" Color="#FFE8F4FF" />
+    <SolidColorBrush x:Key="Brush.Banner.NonElevated.Border" Color="#FFB3DAF7" />
+    <SolidColorBrush x:Key="Brush.Banner.NonElevated.Foreground" Color="#FF0A466E" />
+
+    <!-- Badge (migrated from App.xaml) -->
+    <!-- Release Type -->
+    <SolidColorBrush x:Key="Badge.Release.Label" Color="#0B4F73" />
+    <SolidColorBrush x:Key="Badge.Release.Value" Color="#1390D4" />
+    <!-- Support -->
+    <SolidColorBrush x:Key="Badge.Support.Label" Color="#394148" />
+    <SolidColorBrush x:Key="Badge.Support.Value" Color="#56616B" />
+    <!-- EOL -->
+    <SolidColorBrush x:Key="Badge.Eol.Label" Color="#7B1F2B" />
+    <SolidColorBrush x:Key="Badge.Eol.Value" Color="#C23B4E" />
+    <!-- MAUI EOL -->
+    <SolidColorBrush x:Key="Badge.MauiEol.Label" Color="#4B2D6B" />
+    <SolidColorBrush x:Key="Badge.MauiEol.Value" Color="#6E43A6" />
+    <!-- Latest Missing -->
+    <SolidColorBrush x:Key="Badge.Latest.Label" Color="#0E5A3C" />
+    <SolidColorBrush x:Key="Badge.Latest.Value" Color="#1D8A5B" />
+    <!-- Stage -->
+    <SolidColorBrush x:Key="Badge.Stage.Label" Color="#283342" />
+    <SolidColorBrush x:Key="Badge.Stage.Value" Color="#3C4C60" />
+    <!-- Security (two-segment label side already replaced by dynamic security palette) -->
+    <SolidColorBrush x:Key="Badge.Security.Label" Color="#6B1F29" />
+    <SolidColorBrush x:Key="Badge.Security.Value" Color="#A1293D" />
+    <!-- Architecture -->
+    <SolidColorBrush x:Key="Badge.Arch.Label" Color="#20323D" />
+    <SolidColorBrush x:Key="Badge.Arch.Value" Color="#32505F" />
+    <!-- SubType -->
+    <SolidColorBrush x:Key="Badge.SubType.Label" Color="#2B2F40" />
+    <SolidColorBrush x:Key="Badge.SubType.Value" Color="#41465A" />
+    <!-- State -->
+    <SolidColorBrush x:Key="Badge.State.Label" Color="#0F4C37" />
+    <SolidColorBrush x:Key="Badge.State.Value" Color="#177554" />
+    <!-- Reason background -->
+    <SolidColorBrush x:Key="Badge.Reason.Background" Color="#4E5963" />
+</ResourceDictionary>

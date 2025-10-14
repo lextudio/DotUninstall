@@ -13,6 +13,7 @@
     <conv:StringEqualsToVisibilityConverter x:Key="StringEqualsToVisibilityConverter" />
     <conv:LifecycleStateToBrushConverter x:Key="LifecycleStateToBrushConverter" />
     <conv:ChannelDisplayConverter x:Key="ChannelDisplayConverter" />
+    <conv:SecurityStateYesNoConverter x:Key="SecurityStateYesNoConverter" />
     <DataTemplate x:Key="HeaderTemplate">
       <StackPanel
         Margin="8,0,8,12"
@@ -209,8 +210,8 @@
                   </StackPanel>
                 </Border>
               </Grid>
-              <!--  Latest missing (Latest | version)  -->
-              <Grid Visibility="{Binding ShowLatestRelevantMissing, Converter={StaticResource BoolToVisibilityConverter}}">
+              <!--  Latest missing (normal)  -->
+              <Grid Visibility="{Binding ShowLatestRelevantMissingNormal, Converter={StaticResource BoolToVisibilityConverter}}">
                 <Grid.ColumnDefinitions>
                   <ColumnDefinition />
                   <ColumnDefinition />
@@ -219,14 +220,10 @@
                 <Border Grid.Column="0" Padding="6,2" Background="{StaticResource Badge.Latest.Label}" CornerRadius="4,0,0,4">
                   <TextBlock FontSize="11" Foreground="White" FontWeight="SemiBold" Text="Latest" />
                 </Border>
-                <Border Grid.Column="1" Padding="6,2" Background="{StaticResource Badge.Latest.Value}" CornerRadius="0">
+                <Border Grid.Column="1" Padding="6,2" Background="{StaticResource Badge.Latest.Value}" CornerRadius="0,4,4,0">
                   <StackPanel Orientation="Horizontal" Spacing="2">
-                    <TextBlock
-                      FontSize="11"
-                      Foreground="White"
-                      Text="{Binding LatestRelevantVersion}" />
+                    <TextBlock FontSize="11" Foreground="White" Text="{Binding LatestRelevantVersion}" />
                     <Button
-                      Grid.Column="2"
                       Width="18"
                       Height="18"
                       Margin="2,0,0,0"
@@ -237,17 +234,41 @@
                       CornerRadius="9"
                       Tag="{Binding ChannelDownloadUrl}"
                       ToolTipService.ToolTip="Download">
-                      <TextBlock
-                        HorizontalAlignment="Center"
-                        VerticalAlignment="Center"
-                        FontSize="11"
-                        FontWeight="Bold"
-                        Foreground="{StaticResource Badge.Latest.Value}"
-                        Text="i" />
+                      <TextBlock HorizontalAlignment="Center" VerticalAlignment="Center" FontSize="11" FontWeight="Bold" Foreground="{StaticResource Badge.Latest.Value}" Text="i" />
                     </Button>
                   </StackPanel>
                 </Border>
               </Grid>
+              <!--  Latest missing (security)  -->
+              <Grid Visibility="{Binding ShowLatestRelevantMissingSecurity, Converter={StaticResource BoolToVisibilityConverter}}">
+                <Grid.ColumnDefinitions>
+                  <ColumnDefinition />
+                  <ColumnDefinition />
+                  <ColumnDefinition Width="Auto" />
+                </Grid.ColumnDefinitions>
+                <Border Grid.Column="0" Padding="6,2" Background="{StaticResource Brush.Security.Alert}" CornerRadius="4,0,0,4">
+                  <TextBlock FontSize="11" Foreground="White" FontWeight="SemiBold" Text="Latest" />
+                </Border>
+                <Border Grid.Column="1" Padding="6,2" Background="{StaticResource Brush.Security.Warning}" CornerRadius="0,4,4,0">
+                  <StackPanel Orientation="Horizontal" Spacing="2">
+                    <TextBlock FontSize="11" Foreground="White" Text="{Binding LatestRelevantVersion}" />
+                    <Button
+                      Width="18"
+                      Height="18"
+                      Margin="2,0,0,0"
+                      Padding="0"
+                      Background="White"
+                      BorderThickness="0"
+                      Click="OnOpenChannelDownload"
+                      CornerRadius="9"
+                      Tag="{Binding ChannelDownloadUrl}"
+                      ToolTipService.ToolTip="Download">
+                      <TextBlock HorizontalAlignment="Center" VerticalAlignment="Center" FontSize="11" FontWeight="Bold" Foreground="{StaticResource Brush.Security.Alert}" Text="i" />
+                    </Button>
+                  </StackPanel>
+                </Border>
+              </Grid>
+              <!-- Removed dedicated channel Security badge per new design -->
             </StackPanel>
             <ListView
               ItemTemplate="{StaticResource InstallEntryTemplate}"
@@ -300,17 +321,17 @@
                 </StackPanel>
               </Border>
             </Grid>
-            <!-- Security badge: Security|Warning -->
-            <Grid Visibility="{Binding IsSecurityUpdate, Converter={StaticResource BoolToVisibilityConverter}}" ToolTipService.ToolTip="Security-related update">
+            <!-- Simplified secure status badge: Secure|Yes or Secure|No -->
+            <Grid ToolTipService.ToolTip="{Binding SecurityTooltip}">
               <Grid.ColumnDefinitions>
                 <ColumnDefinition />
                 <ColumnDefinition />
               </Grid.ColumnDefinitions>
               <Border Grid.Column="0" Background="{StaticResource Badge.Security.Label}" Padding="6,2" CornerRadius="4,0,0,4">
-                <TextBlock FontSize="11" Foreground="White" FontWeight="SemiBold" Text="Security" />
+                <TextBlock FontSize="11" Foreground="White" FontWeight="SemiBold" Text="Secure" />
               </Border>
-              <Border Grid.Column="1" Background="{StaticResource Badge.Security.Value}" Padding="6,2" CornerRadius="0,4,4,0">
-                <TextBlock FontSize="11" Foreground="White" Text="Warning" />
+              <Border Grid.Column="1" Padding="6,2" CornerRadius="0,4,4,0" Background="{StaticResource Badge.Security.Value}">
+                <TextBlock FontSize="11" Foreground="White" Text="{Binding SecurityStatus, Converter={StaticResource SecurityStateYesNoConverter}}" />
               </Border>
             </Grid>
             <!-- Out of support badge -->
@@ -391,8 +412,8 @@
       <Border
         Margin="8,8,8,0"
         Padding="8"
-        Background="#F2F2F2"
-        BorderBrush="#CCCCCC"
+  Background="{StaticResource Brush.Banner.Snapshot.Background}"
+  BorderBrush="{StaticResource Brush.Banner.Snapshot.Border}"
         BorderThickness="1"
         CornerRadius="6"
         Visibility="{Binding IsUsingSnapshot, Converter={StaticResource BoolToVisibilityConverter}}">
@@ -402,15 +423,15 @@
           Spacing="8">
           <TextBlock
             FontSize="12"
-            Foreground="#444"
+            Foreground="{StaticResource Brush.Banner.Snapshot.Foreground}"
             Text="Using embedded metadata snapshot (offline)." />
         </StackPanel>
       </Border>
       <Border
         Margin="8,0,8,0"
         Padding="8"
-        Background="#EEF7FF"
-        BorderBrush="#B3DAF7"
+  Background="{StaticResource Brush.Banner.Cached.Background}"
+  BorderBrush="{StaticResource Brush.Banner.Cached.Border}"
         BorderThickness="1"
         CornerRadius="6"
         Visibility="{Binding IsUsingCachedLive, Converter={StaticResource BoolToVisibilityConverter}}">
@@ -420,7 +441,7 @@
           Spacing="8">
           <TextBlock
             FontSize="12"
-            Foreground="#0A466E"
+            Foreground="{StaticResource Brush.Banner.Cached.Foreground}"
             Text="On cached live metadata." />
         </StackPanel>
       </Border>
@@ -428,8 +449,8 @@
       <Border
         Margin="8,0,8,0"
         Padding="12"
-        Background="#D1F0D1"
-        BorderBrush="#7BC47B"
+  Background="{StaticResource Brush.Banner.Update.Background}"
+  BorderBrush="{StaticResource Brush.Banner.Update.Border}"
         BorderThickness="1"
         CornerRadius="6"
         Visibility="{Binding HasUpdate, Converter={StaticResource BoolToVisibilityConverter}}">
@@ -440,7 +461,7 @@
           <TextBlock
             MaxWidth="640"
             FontSize="12"
-            Foreground="#0B3D0B"
+            Foreground="{StaticResource Brush.Banner.Update.Foreground}"
             TextWrapping="WrapWholeWords">
             <Run Text="Update available: " />
             <Run Text="{Binding UpdateMessage}" />
@@ -455,8 +476,8 @@
       <Border
         Margin="8,0,8,0"
         Padding="12"
-        Background="#FFF3CD"
-        BorderBrush="#F8D486"
+  Background="{StaticResource Brush.Banner.Elevation.Background}"
+  BorderBrush="{StaticResource Brush.Banner.Elevation.Border}"
         BorderThickness="1"
         CornerRadius="6"
         Visibility="{Binding ShowElevationWarning, Converter={StaticResource BoolToVisibilityConverter}}">
@@ -467,7 +488,7 @@
           <TextBlock
             MaxWidth="640"
             FontSize="12"
-            Foreground="#664D03"
+            Foreground="{StaticResource Brush.Banner.Elevation.Foreground}"
             TextWrapping="WrapWholeWords">
             <Run Text="Running with elevated privileges (root). " />
             <Run Text="Original user: " />
@@ -485,8 +506,8 @@
       <Border
         Margin="8,0,8,0"
         Padding="12"
-        Background="#E8F4FF"
-        BorderBrush="#B3DAF7"
+  Background="{StaticResource Brush.Banner.NonElevated.Background}"
+  BorderBrush="{StaticResource Brush.Banner.NonElevated.Border}"
         BorderThickness="1"
         CornerRadius="6"
         Visibility="{Binding ShowElevationOffer, Converter={StaticResource BoolToVisibilityConverter}}">
@@ -497,7 +518,7 @@
           <TextBlock
             MaxWidth="640"
             FontSize="12"
-            Foreground="#0A466E"
+            Foreground="{StaticResource Brush.Banner.NonElevated.Foreground}"
             TextWrapping="WrapWholeWords">
             <Run Text="Some uninstall operations may require administrator rights. " />
             <Run Text="You can relaunch this app with elevated privileges." />

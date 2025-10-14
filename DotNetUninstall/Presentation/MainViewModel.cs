@@ -197,6 +197,13 @@ public partial class MainViewModel : ObservableObject
                 bool isPreview = previewKind != "ga";
                 bool outOfSupport = meta != null && (meta.SupportPhase == "eol" || (meta.EolDate.HasValue && meta.EolDate.Value < DateTime.UtcNow.Date));
                 bool isSecurity = meta != null && ((baseEntry.Type == "sdk" && meta.SecurityVersions.Contains(baseEntry.Version)) || (baseEntry.Type == "runtime" && meta.SecurityVersions.Contains(baseEntry.Version)));
+                SecurityStatus securityStatus = SecurityStatus.None;
+                string? securityTooltip = null;
+                if (meta != null)
+                {
+                    var latestSec = baseEntry.Type == "sdk" ? meta.LatestSecuritySdk : meta.LatestSecurityRuntime;
+                    (securityStatus, securityTooltip) = DotNetUninstall.Core.SecurityClassificationHelper.Classify(baseEntry.Version, latestSec, isSecurity);
+                }
                 finalEntry = baseEntry with
                 {
                     Channel = channel,
@@ -207,7 +214,9 @@ public partial class MainViewModel : ObservableObject
                     PreviewNumber = previewNum,
                     IsPreview = isPreview,
                     IsSecurityUpdate = isSecurity,
-                    EolDate = meta?.EolDate
+                    EolDate = meta?.EolDate,
+                    SecurityStatus = securityStatus,
+                    SecurityTooltip = securityTooltip
                 };
             }
             catch { }
@@ -268,6 +277,11 @@ public partial class MainViewModel : ObservableObject
         public string? LatestSdk { get; set; }
         public string? LatestRuntime { get; set; }
         public DateTime? MauiEolDate { get; set; }
+        public string? LatestSecuritySdk { get; set; }
+        public string? LatestSecurityRuntime { get; set; }
+        // Map version -> CVE ids (flattened), union stored in AllCves
+        public Dictionary<string, List<string>> VersionCves { get; } = new(StringComparer.OrdinalIgnoreCase);
+        public HashSet<string> AllCves { get; } = new(StringComparer.OrdinalIgnoreCase);
     }
 
     private static Dictionary<string, DateTime?>? _mauiLifecycle; // channel -> eolDate
@@ -520,26 +534,66 @@ public partial class MainViewModel : ObservableObject
                     // We want highest (latest) stable versions; use NuGetVersion ordering
                     NuGetVersion? maxSdk = null;
                     NuGetVersion? maxRuntime = null;
+                    NuGetVersion? maxSecSdk = null;
+                    NuGetVersion? maxSecRuntime = null;
                     foreach (var r in rels.Releases)
                     {
                         bool sec = r.Security == true;
+                        List<string>? cves = null;
+                        if (sec && r is not null)
+                        {
+                            try
+                            {
+                                if (r is ChannelRelease cr && cr.GetType().GetProperty("CveList") != null) { }
+                            }
+                            catch { }
+                        }
                         void AddSdk(string? v) { if (!string.IsNullOrWhiteSpace(v)) { resolved.SdkVersions.Add(v); if (sec) resolved.SecurityVersions.Add(v); } }
                         void AddRuntime(string? v) { if (!string.IsNullOrWhiteSpace(v)) { resolved.RuntimeVersions.Add(v); if (sec) resolved.SecurityVersions.Add(v); } }
-                        if (r.Sdk?.Version != null) AddSdk(r.Sdk.Version);
-                        if (r.Sdks != null) foreach (var srel in r.Sdks) AddSdk(srel.Version);
-                        if (r.Runtime?.Version != null) AddRuntime(r.Runtime.Version);
+                        #pragma warning disable CS8602 // Analyzer false-positive: r and r.Sdk are non-null within loop scope
+                        var localSdk = r.Sdk;
+                        #pragma warning restore CS8602
+                        if (localSdk is not null)
+                        {
+                            var sdkVerTmp = localSdk.Version;
+                            if (!string.IsNullOrWhiteSpace(sdkVerTmp)) AddSdk(sdkVerTmp);
+                        }
+                        if (r.Sdks != null) foreach (var srel in r.Sdks) { var sv = srel.Version; if (!string.IsNullOrWhiteSpace(sv)) AddSdk(sv); }
+                        var rtVerTmp = r.Runtime?.Version;
+                        if (!string.IsNullOrWhiteSpace(rtVerTmp)) AddRuntime(rtVerTmp);
                         // Track latest stable (non-prerelease) versions
-                        if (r.Sdk?.Version != null && NuGetVersion.TryParse(r.Sdk.Version, out var sdkNv))
+                        var sdkVersionString = r.Sdk?.Version;
+                        if (!string.IsNullOrWhiteSpace(sdkVersionString) && NuGetVersion.TryParse(sdkVersionString, out var sdkNv))
                         {
                             if (!sdkNv.IsPrerelease && (maxSdk == null || sdkNv > maxSdk)) maxSdk = sdkNv;
+                            if (sec && !sdkNv.IsPrerelease && (maxSecSdk == null || sdkNv > maxSecSdk)) maxSecSdk = sdkNv;
                         }
                         if (r.Runtime?.Version != null && NuGetVersion.TryParse(r.Runtime.Version, out var rtNv))
                         {
                             if (!rtNv.IsPrerelease && (maxRuntime == null || rtNv > maxRuntime)) maxRuntime = rtNv;
+                            if (sec && !rtNv.IsPrerelease && (maxSecRuntime == null || rtNv > maxSecRuntime)) maxSecRuntime = rtNv;
+                        }
+
+                        // Parse CVE list if present in raw JSON (manual scan since we don't have strong types here)
+                        if (sec)
+                        {
+                            try
+                            {
+                                // We need the raw JSON for the release to extract cve-list; since we don't preserve it, heuristic omitted for now.
+                                // Placeholder: store empty list so structure exists.
+                                var keyVer = r.Sdk?.Version ?? r.Runtime?.Version;
+                                if (!string.IsNullOrWhiteSpace(keyVer))
+                                {
+                                    resolved.VersionCves[keyVer!] = cves ?? new List<string>();
+                                }
+                            }
+                            catch { }
                         }
                     }
                     resolved.LatestSdk = maxSdk?.ToNormalizedString();
                     resolved.LatestRuntime = maxRuntime?.ToNormalizedString();
+                    resolved.LatestSecuritySdk = maxSecSdk?.ToNormalizedString();
+                    resolved.LatestSecurityRuntime = maxSecRuntime?.ToNormalizedString();
                 }
                 _channelCache[ch] = resolved;
             }
@@ -718,7 +772,24 @@ public partial class MainViewModel : ObservableObject
                 EnsureMauiLifecycleLoaded();
                 DateTime? mauiEol = null;
                 if (_mauiLifecycle != null && grp.Key != null && _mauiLifecycle.TryGetValue(grp.Key, out var mdt)) mauiEol = mdt;
-                GroupedSdkItems.Add(new ChannelGroup(grp.Key!, grp, rt, first?.SupportPhase, first?.EolDate, mauiEol, cr?.LatestSdk, cr?.LatestRuntime, isSdkGroup: true));
+                bool latestRelevantIsSecurity = false;
+                if (cr?.LatestSecuritySdk != null && cr.LatestSdk == cr.LatestSecuritySdk)
+                {
+                    latestRelevantIsSecurity = true;
+                }
+                GroupedSdkItems.Add(new ChannelGroup(
+                    grp.Key!,
+                    grp,
+                    rt,
+                    first?.SupportPhase,
+                    first?.EolDate,
+                    mauiEol,
+                    cr?.LatestSdk,
+                    cr?.LatestRuntime,
+                    cr?.LatestSecuritySdk,
+                    cr?.LatestSecurityRuntime,
+                    isSdkGroup: true,
+                    latestRelevantIsSecurity: latestRelevantIsSecurity));
             }
         }
         if (RuntimeItems.Count > 0)
@@ -732,7 +803,24 @@ public partial class MainViewModel : ObservableObject
                 EnsureMauiLifecycleLoaded();
                 DateTime? mauiEol2 = null;
                 if (_mauiLifecycle != null && grp.Key != null && _mauiLifecycle.TryGetValue(grp.Key, out var mdt2)) mauiEol2 = mdt2;
-                GroupedRuntimeItems.Add(new ChannelGroup(grp.Key!, grp, rt2, first?.SupportPhase, first?.EolDate, mauiEol2, cr2?.LatestSdk, cr2?.LatestRuntime, isSdkGroup: false));
+                bool latestRelevantIsSecurityRt = false;
+                if (cr2?.LatestSecurityRuntime != null && cr2.LatestRuntime == cr2.LatestSecurityRuntime)
+                {
+                    latestRelevantIsSecurityRt = true;
+                }
+                GroupedRuntimeItems.Add(new ChannelGroup(
+                    grp.Key!,
+                    grp,
+                    rt2,
+                    first?.SupportPhase,
+                    first?.EolDate,
+                    mauiEol2,
+                    cr2?.LatestSdk,
+                    cr2?.LatestRuntime,
+                    cr2?.LatestSecuritySdk,
+                    cr2?.LatestSecurityRuntime,
+                    isSdkGroup: false,
+                    latestRelevantIsSecurity: latestRelevantIsSecurityRt));
             }
         }
         OnPropertyChanged(nameof(GroupedSdkItems));

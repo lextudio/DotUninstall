@@ -57,6 +57,7 @@
 
   <ItemGroup>
     <ProjectReference Include="..\Tooling\UninstallTooling.csproj" />
+    <ProjectReference Include="..\DotNetUninstall.Core\DotNetUninstall.Core.csproj" />
   </ItemGroup>
 
   <ItemGroup>

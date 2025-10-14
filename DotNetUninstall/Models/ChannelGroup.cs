@@ -23,15 +23,29 @@ public sealed class ChannelGroup
     public string? MauiEolInfoUrl => MauiEolDate.HasValue ? "https://dotnet.microsoft.com/platform/support/policy/maui" : null;
     public string? LatestSdkVersion { get; }
     public string? LatestRuntimeVersion { get; }
+    public string? LatestSecuritySdkVersion { get; }
+    public string? LatestSecurityRuntimeVersion { get; }
+    // Security update presence no longer surfaced as separate badge; we track only if latest relevant is security.
+    public bool HasSecurityUpdate => false; // retained for backwards compatibility (always false now)
+    public bool IsLatestSecuritySdkInstalled { get; }
+    public bool IsLatestSecurityRuntimeInstalled { get; }
     public bool IsLatestSdkInstalled { get; }
     public bool IsLatestRuntimeInstalled { get; }
     public bool IsSdkGroup { get; }
     public string ChannelDownloadUrl { get; }
     // Relevant (tab-specific) latest version properties
     public string? LatestRelevantVersion => IsSdkGroup ? LatestSdkVersion : LatestRuntimeVersion;
+    // Relevant latest security version (SDK vs Runtime depending on tab)
+    public string? LatestSecurityRelevantVersion => IsSdkGroup ? LatestSecuritySdkVersion : LatestSecurityRuntimeVersion;
     public bool IsLatestRelevantInstalled => IsSdkGroup ? IsLatestSdkInstalled : IsLatestRuntimeInstalled;
     public bool ShowLatestRelevantMissing => !string.IsNullOrWhiteSpace(LatestRelevantVersion) && !IsLatestRelevantInstalled;
     public string? LatestRelevantLabel => LatestRelevantVersion is null ? null : $"latest:{LatestRelevantVersion}";
+    public string? SecurityUpdateTooltip => null; // deprecated
+    // Indicates whether the latest relevant (SDK or Runtime) version is itself a security release
+    public bool LatestRelevantIsSecurity { get; }
+    // Distinguish missing latest into security vs normal for styling
+    public bool ShowLatestRelevantMissingSecurity => ShowLatestRelevantMissing && LatestRelevantIsSecurity;
+    public bool ShowLatestRelevantMissingNormal => ShowLatestRelevantMissing && !LatestRelevantIsSecurity;
 
     // Documentation links
     public string? ReleaseTypeInfoUrl => ReleaseType is null ? null : "https://learn.microsoft.com/lifecycle/faq/dotnet-core";
@@ -50,7 +64,10 @@ public sealed class ChannelGroup
         DateTime? mauiEolDate,
         string? latestSdkVersion,
         string? latestRuntimeVersion,
-        bool isSdkGroup)
+        string? latestSecuritySdkVersion,
+        string? latestSecurityRuntimeVersion,
+        bool isSdkGroup,
+        bool latestRelevantIsSecurity)
     {
         Channel = string.IsNullOrWhiteSpace(channel) ? "Other" : channel;
 
@@ -72,7 +89,9 @@ public sealed class ChannelGroup
         EolDate = eolDate;
         MauiEolDate = mauiEolDate;
         LatestSdkVersion = latestSdkVersion;
-        LatestRuntimeVersion = latestRuntimeVersion;
+    LatestRuntimeVersion = latestRuntimeVersion;
+    LatestSecuritySdkVersion = latestSecuritySdkVersion;
+    LatestSecurityRuntimeVersion = latestSecurityRuntimeVersion;
         IsSdkGroup = isSdkGroup;
         // Determine if latest versions are installed (simple string match)
         if (!string.IsNullOrWhiteSpace(LatestSdkVersion))
@@ -83,8 +102,17 @@ public sealed class ChannelGroup
         {
             IsLatestRuntimeInstalled = Items.Any(i => i.Type == "runtime" && string.Equals(i.Version, LatestRuntimeVersion, StringComparison.OrdinalIgnoreCase));
         }
+        if (!string.IsNullOrWhiteSpace(LatestSecuritySdkVersion))
+        {
+            IsLatestSecuritySdkInstalled = Items.Any(i => i.Type == "sdk" && string.Equals(i.Version, LatestSecuritySdkVersion, StringComparison.OrdinalIgnoreCase));
+        }
+        if (!string.IsNullOrWhiteSpace(LatestSecurityRuntimeVersion))
+        {
+            IsLatestSecurityRuntimeInstalled = Items.Any(i => i.Type == "runtime" && string.Equals(i.Version, LatestSecurityRuntimeVersion, StringComparison.OrdinalIgnoreCase));
+        }
         ChannelDownloadUrl = $"https://dotnet.microsoft.com/download/dotnet/{Channel}"; // Generic channel landing page
         LifecycleState = ComputeLifecycleState();
+        LatestRelevantIsSecurity = latestRelevantIsSecurity;
     }
 
     private sealed class NuGetVersionDescComparer : IComparer<NuGetVersion?>
