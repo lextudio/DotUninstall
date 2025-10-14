@@ -92,4 +92,10 @@
     <SolidColorBrush x:Key="Badge.State.Value" Color="#177554" />
     <!-- Reason background -->
     <SolidColorBrush x:Key="Badge.Reason.Background" Color="#4E5963" />
+
+    <!-- Typography scale additions -->
+    <x:Double x:Key="FontSize.ChannelTitle">20</x:Double>
+    <x:Double x:Key="FontSize.VersionPrimary">18</x:Double>
+    <x:Double x:Key="FontSize.Badge">10</x:Double>
+    <x:Double x:Key="FontSize.DisplayName">16</x:Double>
 </ResourceDictionary>

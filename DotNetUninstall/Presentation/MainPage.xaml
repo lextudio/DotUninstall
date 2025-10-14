@@ -31,11 +31,11 @@
             Orientation="Horizontal"
             Spacing="8">
             <TextBlock
-              FontSize="14"
-              FontWeight="Bold"
+              FontSize="{StaticResource FontSize.ChannelTitle}"
+              FontWeight="SemiBold"
               Text=".NET" />
             <TextBlock
-              FontSize="14"
+              FontSize="{StaticResource FontSize.ChannelTitle}"
               FontWeight="Bold"
               Text="{Binding Channel, Converter={StaticResource ChannelDisplayConverter}}" />
           </StackPanel>
@@ -58,23 +58,23 @@
                 </Grid.ColumnDefinitions>
                 <Border
                   Grid.Column="0"
-                  Padding="6,2"
+                  Padding="5,2"
                   Background="{StaticResource Badge.Release.Label}"
                   CornerRadius="4,0,0,4">
                   <TextBlock
-                    FontSize="11"
+                    FontSize="{StaticResource FontSize.Badge}"
                     FontWeight="SemiBold"
                     Foreground="White"
                     Text="Type" />
                 </Border>
                 <Border
                   Grid.Column="1"
-                  Padding="6,2"
+                  Padding="5,2"
                   Background="{StaticResource Badge.Release.Value}"
                   CornerRadius="0">
                   <StackPanel Orientation="Horizontal" Spacing="2">
                     <TextBlock
-                      FontSize="11"
+                      FontSize="{StaticResource FontSize.Badge}"
                       Foreground="White"
                       Text="{Binding ReleaseType}" />
                     <Button
@@ -109,23 +109,23 @@
                 </Grid.ColumnDefinitions>
                 <Border
                   Grid.Column="0"
-                  Padding="6,2"
+                  Padding="5,2"
                   Background="{StaticResource Badge.Support.Label}"
                   CornerRadius="4,0,0,4">
                   <TextBlock
-                    FontSize="11"
+                    FontSize="{StaticResource FontSize.Badge}"
                     FontWeight="SemiBold"
                     Foreground="White"
                     Text="Support" />
                 </Border>
                 <Border
                   Grid.Column="1"
-                  Padding="6,2"
+                  Padding="5,2"
                   Background="{StaticResource Badge.Support.Value}"
                   CornerRadius="0">
                   <StackPanel Orientation="Horizontal" Spacing="2">
                     <TextBlock
-                      FontSize="11"
+                      FontSize="{StaticResource FontSize.Badge}"
                       Foreground="White"
                       Text="{Binding SupportPhase}" />
                     <Button
@@ -159,23 +159,23 @@
                 </Grid.ColumnDefinitions>
                 <Border
                   Grid.Column="0"
-                  Padding="6,2"
+                  Padding="5,2"
                   Background="{StaticResource Badge.Eol.Label}"
                   CornerRadius="4,0,0,4">
                   <TextBlock
-                    FontSize="11"
+                    FontSize="{StaticResource FontSize.Badge}"
                     FontWeight="SemiBold"
                     Foreground="White"
                     Text="EOL" />
                 </Border>
                 <Border
                   Grid.Column="1"
-                  Padding="6,2"
+                  Padding="5,2"
                   Background="{StaticResource Badge.Eol.Value}"
                   CornerRadius="0">
                   <StackPanel Orientation="Horizontal" Spacing="2">
                     <TextBlock
-                      FontSize="11"
+                      FontSize="{StaticResource FontSize.Badge}"
                       Foreground="White"
                       Text="{Binding EolDateValue}" />
                     <Button
@@ -210,23 +210,23 @@
                 </Grid.ColumnDefinitions>
                 <Border
                   Grid.Column="0"
-                  Padding="6,2"
+                  Padding="5,2"
                   Background="{StaticResource Badge.MauiEol.Label}"
                   CornerRadius="4,0,0,4">
                   <TextBlock
-                    FontSize="11"
+                    FontSize="{StaticResource FontSize.Badge}"
                     FontWeight="SemiBold"
                     Foreground="White"
                     Text="MAUI EOL" />
                 </Border>
                 <Border
                   Grid.Column="1"
-                  Padding="6,2"
+                  Padding="5,2"
                   Background="{StaticResource Badge.MauiEol.Value}"
                   CornerRadius="0">
                   <StackPanel Orientation="Horizontal" Spacing="2">
                     <TextBlock
-                      FontSize="11"
+                      FontSize="{StaticResource FontSize.Badge}"
                       Foreground="White"
                       Text="{Binding MauiEolDateValue}" />
                     <Button
@@ -261,23 +261,23 @@
                 </Grid.ColumnDefinitions>
                 <Border
                   Grid.Column="0"
-                  Padding="6,2"
+                  Padding="5,2"
                   Background="{StaticResource Badge.Latest.Label}"
                   CornerRadius="4,0,0,4">
                   <TextBlock
-                    FontSize="11"
+                    FontSize="{StaticResource FontSize.Badge}"
                     FontWeight="SemiBold"
                     Foreground="White"
                     Text="Latest" />
                 </Border>
                 <Border
                   Grid.Column="1"
-                  Padding="6,2"
+                  Padding="5,2"
                   Background="{StaticResource Badge.Latest.Value}"
                   CornerRadius="0,4,4,0">
                   <StackPanel Orientation="Horizontal" Spacing="2">
                     <TextBlock
-                      FontSize="11"
+                      FontSize="{StaticResource FontSize.Badge}"
                       Foreground="White"
                       Text="{Binding LatestRelevantVersion}" />
                     <Button
@@ -294,7 +294,7 @@
                       <TextBlock
                         HorizontalAlignment="Center"
                         VerticalAlignment="Center"
-                        FontSize="11"
+                        FontSize="{StaticResource FontSize.Badge}"
                         FontWeight="Bold"
                         Foreground="{StaticResource Badge.Latest.Value}"
                         Text="i" />
@@ -310,23 +310,23 @@
                 </Grid.ColumnDefinitions>
                 <Border
                   Grid.Column="0"
-                  Padding="6,2"
+                  Padding="5,2"
                   Background="{StaticResource Brush.Security.Alert}"
                   CornerRadius="4,0,0,4">
                   <TextBlock
-                    FontSize="11"
+                    FontSize="{StaticResource FontSize.Badge}"
                     FontWeight="SemiBold"
                     Foreground="White"
                     Text="Latest" />
                 </Border>
                 <Border
                   Grid.Column="1"
-                  Padding="6,2"
+                  Padding="5,2"
                   Background="{StaticResource Brush.Security.Warning}"
                   CornerRadius="0,4,4,0">
                   <StackPanel Orientation="Horizontal" Spacing="2">
                     <TextBlock
-                      FontSize="11"
+                      FontSize="{StaticResource FontSize.Badge}"
                       Foreground="White"
                       Text="{Binding LatestRelevantVersion}" />
                     <Button
@@ -343,7 +343,7 @@
                       <TextBlock
                         HorizontalAlignment="Center"
                         VerticalAlignment="Center"
-                        FontSize="11"
+                        FontSize="{StaticResource FontSize.Badge}"
                         FontWeight="Bold"
                         Foreground="{StaticResource Brush.Security.Alert}"
                         Text="i" />
@@ -374,10 +374,10 @@
             VerticalAlignment="Center"
             Orientation="Horizontal"
             Spacing="6">
-            <TextBlock FontWeight="SemiBold" Text="{Binding Version}" />
+            <TextBlock FontWeight="Bold" FontSize="{StaticResource FontSize.VersionPrimary}" Text="{Binding Version}" />
             <TextBlock
               MaxWidth="360"
-              FontSize="11"
+              FontSize="{StaticResource FontSize.Badge}"
               Opacity="0.65"
               Text="{Binding DisplayName}"
               TextTrimming="CharacterEllipsis" />
@@ -394,23 +394,23 @@
               </Grid.ColumnDefinitions>
               <Border
                 Grid.Column="0"
-                Padding="6,2"
+                Padding="5,2"
                 Background="{StaticResource Badge.ReleaseDate.Label}"
                 CornerRadius="4,0,0,4">
                 <TextBlock
-                  FontSize="11"
+                  FontSize="{StaticResource FontSize.Badge}"
                   FontWeight="SemiBold"
                   Foreground="White"
                   Text="Release" />
               </Border>
               <Border
                 Grid.Column="1"
-                Padding="6,2"
+                Padding="5,2"
                 Background="{StaticResource Badge.ReleaseDate.Value}"
                 CornerRadius="0">
                 <StackPanel Orientation="Horizontal" Spacing="2">
                   <TextBlock
-                    FontSize="11"
+                    FontSize="{StaticResource FontSize.Badge}"
                     Foreground="White"
                     Text="{Binding ReleaseDateValue}" />
                   <Button
@@ -445,24 +445,24 @@
               </Grid.ColumnDefinitions>
               <Border
                 Grid.Column="0"
-                Padding="6,2"
+                Padding="5,2"
                 Background="{StaticResource Badge.Stage.Label}"
                 CornerRadius="4,0,0,4">
                 <TextBlock
-                  FontSize="11"
+                  FontSize="{StaticResource FontSize.Badge}"
                   FontWeight="SemiBold"
                   Foreground="White"
                   Text="Stage" />
               </Border>
               <Border
                 Grid.Column="1"
-                Padding="6,2"
+                Padding="5,2"
                 Background="{StaticResource Badge.Stage.Value}"
                 CornerRadius="0,4,4,0">
                 <StackPanel Orientation="Horizontal" Spacing="4">
                   <!--  Simpler: bind text via MultiBinding concept is heavier; use conditional visibility blocks  -->
                   <TextBlock
-                    FontSize="11"
+                    FontSize="{StaticResource FontSize.Badge}"
                     Foreground="White"
                     Text="GA"
                     Visibility="{Binding IsGa, Converter={StaticResource BoolToVisibilityConverter}}" />
@@ -471,11 +471,11 @@
                     Spacing="2"
                     Visibility="{Binding IsGa, Converter={StaticResource InverseBoolToVisibilityConverter}}">
                     <TextBlock
-                      FontSize="11"
+                      FontSize="{StaticResource FontSize.Badge}"
                       Foreground="White"
                       Text="{Binding PreviewKindDisplay}" />
                     <TextBlock
-                      FontSize="11"
+                      FontSize="{StaticResource FontSize.Badge}"
                       Foreground="White"
                       Text="{Binding PreviewNumber}"
                       Visibility="{Binding PreviewNumber, Converter={StaticResource NullToVisibilityConverter}}" />
@@ -491,22 +491,22 @@
               </Grid.ColumnDefinitions>
               <Border
                 Grid.Column="0"
-                Padding="6,2"
+                Padding="5,2"
                 Background="{StaticResource Badge.Security.Label}"
                 CornerRadius="4,0,0,4">
                 <TextBlock
-                  FontSize="11"
+                  FontSize="{StaticResource FontSize.Badge}"
                   FontWeight="SemiBold"
                   Foreground="White"
                   Text="Secure" />
               </Border>
               <Border
                 Grid.Column="1"
-                Padding="6,2"
+                Padding="5,2"
                 Background="{StaticResource Badge.Security.Value}"
                 CornerRadius="0,4,4,0">
                 <TextBlock
-                  FontSize="11"
+                  FontSize="{StaticResource FontSize.Badge}"
                   Foreground="White"
                   Text="{Binding SecurityStatus, Converter={StaticResource SecurityStateYesNoConverter}}" />
               </Border>
@@ -519,22 +519,22 @@
               </Grid.ColumnDefinitions>
               <Border
                 Grid.Column="0"
-                Padding="6,2"
+                Padding="5,2"
                 Background="{StaticResource Badge.Eol.Label}"
                 CornerRadius="4,0,0,4">
                 <TextBlock
-                  FontSize="11"
+                  FontSize="{StaticResource FontSize.Badge}"
                   FontWeight="SemiBold"
                   Foreground="White"
                   Text="EOL" />
               </Border>
               <Border
                 Grid.Column="1"
-                Padding="6,2"
+                Padding="5,2"
                 Background="{StaticResource Badge.Eol.Value}"
                 CornerRadius="0,4,4,0">
                 <TextBlock
-                  FontSize="11"
+                  FontSize="{StaticResource FontSize.Badge}"
                   Foreground="White"
                   Text="Build" />
               </Border>
@@ -547,22 +547,22 @@
               </Grid.ColumnDefinitions>
               <Border
                 Grid.Column="0"
-                Padding="6,2"
+                Padding="5,2"
                 Background="{StaticResource Badge.Arch.Label}"
                 CornerRadius="4,0,0,4">
                 <TextBlock
-                  FontSize="11"
+                  FontSize="{StaticResource FontSize.Badge}"
                   FontWeight="SemiBold"
                   Foreground="White"
                   Text="Arch" />
               </Border>
               <Border
                 Grid.Column="1"
-                Padding="6,2"
+                Padding="5,2"
                 Background="{StaticResource Badge.Arch.Value}"
                 CornerRadius="0,4,4,0">
                 <TextBlock
-                  FontSize="11"
+                  FontSize="{StaticResource FontSize.Badge}"
                   Foreground="White"
                   Text="{Binding Architecture}" />
               </Border>
@@ -575,18 +575,18 @@
               </Grid.ColumnDefinitions>
               <Border
                 Grid.Column="0"
-                Padding="6,2"
+                Padding="5,2"
                 Background="{StaticResource Badge.SubType.Label}"
                 CornerRadius="4,0,0,4">
                 <TextBlock
-                  FontSize="11"
+                  FontSize="{StaticResource FontSize.Badge}"
                   FontWeight="SemiBold"
                   Foreground="White"
                   Text="Type" />
               </Border>
               <Border
                 Grid.Column="1"
-                Padding="6,2"
+                Padding="5,2"
                 Background="{StaticResource Badge.SubType.Value}"
                 CornerRadius="0,4,4,0">
                 <TextBlock
@@ -597,13 +597,13 @@
             </Grid>
             <!--  Reason badge (kept single segment due to potential length)  -->
             <Border
-              Padding="6,2"
+              Padding="5,2"
               Background="{StaticResource Badge.Reason.Background}"
               CornerRadius="4"
               Visibility="{Binding Reason, Converter={StaticResource NullToVisibilityConverter}}">
               <TextBlock
                 MaxWidth="260"
-                FontSize="11"
+                FontSize="{StaticResource FontSize.Badge}"
                 Foreground="White"
                 Text="{Binding Reason}"
                 TextTrimming="CharacterEllipsis" />
@@ -616,22 +616,22 @@
               </Grid.ColumnDefinitions>
               <Border
                 Grid.Column="0"
-                Padding="6,2"
+                Padding="5,2"
                 Background="{StaticResource Badge.State.Label}"
                 CornerRadius="4,0,0,4">
                 <TextBlock
-                  FontSize="11"
+                  FontSize="{StaticResource FontSize.Badge}"
                   FontWeight="SemiBold"
                   Foreground="White"
                   Text="State" />
               </Border>
               <Border
                 Grid.Column="1"
-                Padding="6,2"
+                Padding="5,2"
                 Background="{StaticResource Badge.State.Value}"
                 CornerRadius="0,4,4,0">
                 <TextBlock
-                  FontSize="11"
+                  FontSize="{StaticResource FontSize.Badge}"
                   Foreground="White"
                   Text="Removable" />
               </Border>
