@@ -2,9 +2,9 @@
   x:Class="DotNetUninstall.Presentation.MainPage"
   xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
   xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+  xmlns:controls="using:DotNetUninstall.Presentation.Controls"
   xmlns:conv="using:DotNetUninstall.Presentation.Converters"
   xmlns:sys="using:System"
-  xmlns:controls="using:DotNetUninstall.Presentation.Controls"
   x:Name="RootPage"
   Background="{ThemeResource ApplicationPageBackgroundThemeBrush}">
   <Page.Resources>
@@ -53,78 +53,66 @@
               Spacing="8">
               <!--  Release Type (e.g., LTS | 8)  -->
               <controls:TwoPartBadge
-                Visibility="{Binding ReleaseType, Converter={StaticResource NullToVisibilityConverter}}"
-                Label="Type"
-                Value="{Binding ReleaseType}"
-                BadgeFontSize="{StaticResource FontSize.Badge}"
-                LabelBackground="{StaticResource Badge.Release.Label}"
-                ValueBackground="{StaticResource Badge.Release.Value}"
+                InfoGlyphForeground="{StaticResource Badge.Release.Label}"
                 InfoTag="{Binding ReleaseTypeInfoUrl}"
                 InfoToolTip="Learn more"
-                InfoGlyphForeground="{StaticResource Badge.Release.Label}"
-                />
+                Label="Type"
+                LabelBackground="{StaticResource Badge.Release.Label}"
+                ValueBackground="{StaticResource Badge.Release.Value}"
+                Visibility="{Binding ReleaseType, Converter={StaticResource NullToVisibilityConverter}}"
+                Value="{Binding ReleaseType}" />
               <!--  Support Phase (Phase | value)  -->
               <controls:TwoPartBadge
-                Visibility="{Binding SupportPhase, Converter={StaticResource NullToVisibilityConverter}}"
-                Label="Support"
-                Value="{Binding SupportPhase}"
-                BadgeFontSize="{StaticResource FontSize.Badge}"
-                LabelBackground="{StaticResource Badge.Support.Label}"
-                ValueBackground="{StaticResource Badge.Support.Value}"
+                InfoGlyphForeground="{StaticResource Badge.Support.Value}"
                 InfoTag="{Binding SupportPhaseInfoUrl}"
                 InfoToolTip="Learn more"
-                InfoGlyphForeground="{StaticResource Badge.Support.Value}"
-                />
+                Label="Support"
+                LabelBackground="{StaticResource Badge.Support.Label}"
+                ValueBackground="{StaticResource Badge.Support.Value}"
+                Visibility="{Binding SupportPhase, Converter={StaticResource NullToVisibilityConverter}}"
+                Value="{Binding SupportPhase}" />
               <!--  EOL badge (EOL | date)  -->
               <controls:TwoPartBadge
-                ToolTipService.ToolTip="{Binding EolDisplay}"
-                Visibility="{Binding EolDateValue, Converter={StaticResource NullToVisibilityConverter}}"
-                Label="EOL"
-                Value="{Binding EolDateValue}"
-                BadgeFontSize="{StaticResource FontSize.Badge}"
-                LabelBackground="{StaticResource Badge.Eol.Label}"
-                ValueBackground="{StaticResource Badge.Eol.Value}"
+                InfoGlyphForeground="{StaticResource Badge.Eol.Value}"
                 InfoTag="{Binding EolInfoUrl}"
                 InfoToolTip="Learn more"
-                InfoGlyphForeground="{StaticResource Badge.Eol.Value}"
-                />
+                Label="EOL"
+                LabelBackground="{StaticResource Badge.Eol.Label}"
+                ToolTipService.ToolTip="{Binding EolDisplay}"
+                ValueBackground="{StaticResource Badge.Eol.Value}"
+                Visibility="{Binding EolDateValue, Converter={StaticResource NullToVisibilityConverter}}"
+                Value="{Binding EolDateValue}" />
               <!--  MAUI EOL badge (MAUI EOL | date)  -->
               <controls:TwoPartBadge
-                ToolTipService.ToolTip="MAUI End of life"
-                Visibility="{Binding MauiEolDateValue, Converter={StaticResource NullToVisibilityConverter}}"
-                Label="MAUI EOL"
-                Value="{Binding MauiEolDateValue}"
-                BadgeFontSize="{StaticResource FontSize.Badge}"
-                LabelBackground="{StaticResource Badge.MauiEol.Label}"
-                ValueBackground="{StaticResource Badge.MauiEol.Value}"
+                InfoGlyphForeground="{StaticResource Badge.MauiEol.Value}"
                 InfoTag="{Binding MauiEolInfoUrl}"
                 InfoToolTip="Learn more"
-                InfoGlyphForeground="{StaticResource Badge.MauiEol.Value}"
-                />
+                Label="MAUI EOL"
+                LabelBackground="{StaticResource Badge.MauiEol.Label}"
+                ToolTipService.ToolTip="MAUI End of life"
+                ValueBackground="{StaticResource Badge.MauiEol.Value}"
+                Visibility="{Binding MauiEolDateValue, Converter={StaticResource NullToVisibilityConverter}}"
+                Value="{Binding MauiEolDateValue}" />
               <!--  Latest missing (normal)  -->
               <controls:TwoPartBadge
-                Visibility="{Binding ShowLatestRelevantMissingNormal, Converter={StaticResource BoolToVisibilityConverter}}"
+                InfoGlyphForeground="{StaticResource Badge.Latest.Value}"
+                InfoTag="{Binding ChannelDownloadUrl}"
+                InfoToolTip="Download"
                 Label="Latest"
-                Value="{Binding LatestRelevantVersion}"
-                BadgeFontSize="{StaticResource FontSize.Badge}"
                 LabelBackground="{StaticResource Badge.Latest.Label}"
                 ValueBackground="{StaticResource Badge.Latest.Value}"
-                InfoTag="{Binding ChannelDownloadUrl}"
-                InfoToolTip="Download"
-                InfoGlyphForeground="{StaticResource Badge.Latest.Value}"
-                />
+                Visibility="{Binding ShowLatestRelevantMissingNormal, Converter={StaticResource BoolToVisibilityConverter}}"
+                Value="{Binding LatestRelevantVersion}" />
               <!--  Latest missing (security)  -->
               <controls:TwoPartBadge
-                Visibility="{Binding ShowLatestRelevantMissingSecurity, Converter={StaticResource BoolToVisibilityConverter}}"
-                Label="Latest"
-                Value="{Binding LatestRelevantVersion}"
-                BadgeFontSize="{StaticResource FontSize.Badge}"
-                LabelBackground="{StaticResource Brush.Security.Alert}"
-                ValueBackground="{StaticResource Brush.Security.Warning}"
+                InfoGlyphForeground="{StaticResource Brush.Security.Alert}"
                 InfoTag="{Binding ChannelDownloadUrl}"
                 InfoToolTip="Download"
-                InfoGlyphForeground="{StaticResource Brush.Security.Alert}"
-                />
+                Label="Latest"
+                LabelBackground="{StaticResource Brush.Security.Alert}"
+                ValueBackground="{StaticResource Brush.Security.Warning}"
+                Visibility="{Binding ShowLatestRelevantMissingSecurity, Converter={StaticResource BoolToVisibilityConverter}}"
+                Value="{Binding LatestRelevantVersion}" />
             </StackPanel>
             <ListView
               ItemTemplate="{StaticResource InstallEntryTemplate}"
@@ -148,12 +136,15 @@
             VerticalAlignment="Center"
             Orientation="Horizontal"
             Spacing="6">
-            <TextBlock FontWeight="Bold" FontSize="{StaticResource FontSize.VersionPrimary}" Text="{Binding Version}" />
+            <TextBlock
+              FontSize="{StaticResource FontSize.VersionPrimary}"
+              FontWeight="Bold"
+              Text="{Binding Version}" />
             <TextBlock
               MaxWidth="360"
+              VerticalAlignment="Center"
               FontSize="{StaticResource FontSize.Badge}"
               Opacity="0.65"
-              VerticalAlignment="Center"
               Text="{Binding DisplayName}"
               TextTrimming="CharacterEllipsis" />
           </StackPanel>
@@ -163,84 +154,69 @@
             Spacing="6">
             <!--  Release Date badge: Release|yyyy-MM-dd with notes link  -->
             <controls:TwoPartBadge
-              ToolTipService.ToolTip="View release notes"
-              Visibility="{Binding ReleaseDate, Converter={StaticResource NullToVisibilityConverter}}"
-              Label="Release"
-              Value="{Binding ReleaseDateValue}"
-              BadgeFontSize="{StaticResource FontSize.Badge}"
-              LabelBackground="{StaticResource Badge.ReleaseDate.Label}"
-              ValueBackground="{StaticResource Badge.ReleaseDate.Value}"
+              InfoGlyphForeground="{StaticResource Badge.ReleaseDate.Label}"
               InfoTag="{Binding ReleaseNotesUrl}"
               InfoToolTip="Open release notes"
-              InfoGlyphForeground="{StaticResource Badge.ReleaseDate.Label}"
-              />
+              Label="Release"
+              LabelBackground="{StaticResource Badge.ReleaseDate.Label}"
+              ToolTipService.ToolTip="View release notes"
+              ValueBackground="{StaticResource Badge.ReleaseDate.Value}"
+              Visibility="{Binding ReleaseDate, Converter={StaticResource NullToVisibilityConverter}}"
+              Value="{Binding ReleaseDateValue}" />
             <!--  Stage badge: Stage|GA or Stage|Preview N / Stage|RC N  -->
             <controls:TwoPartBadge
-              ToolTipService.ToolTip="Release stage"
               Label="Stage"
-              Value="{Binding StageDisplay}"
-              Visibility="{Binding StageDisplay, Converter={StaticResource NullToVisibilityConverter}}"
-              BadgeFontSize="{StaticResource FontSize.Badge}"
               LabelBackground="{StaticResource Badge.Stage.Label}"
-              ValueBackground="{StaticResource Badge.Stage.Value}" />
+              ToolTipService.ToolTip="Release stage"
+              ValueBackground="{StaticResource Badge.Stage.Value}"
+              Visibility="{Binding StageDisplay, Converter={StaticResource NullToVisibilityConverter}}"
+              Value="{Binding StageDisplay}" />
             <!--  Simplified secure status badge: Secure|Yes or Secure|No  -->
             <controls:TwoPartBadge
-              ToolTipService.ToolTip="{Binding SecurityTooltip}"
               Label="Secure"
-              Value="{Binding SecurityStatus, Converter={StaticResource SecurityStateYesNoConverter}}"
-              BadgeFontSize="{StaticResource FontSize.Badge}"
               LabelBackground="{StaticResource Badge.Security.Label}"
+              ToolTipService.ToolTip="{Binding SecurityTooltip}"
               ValueBackground="{StaticResource Badge.Security.Value}"
-               />
+              Value="{Binding SecurityStatus, Converter={StaticResource SecurityStateYesNoConverter}}" />
             <!--  Out of support badge  -->
             <controls:TwoPartBadge
-              ToolTipService.ToolTip="Out of support"
-              Visibility="{Binding IsOutOfSupport, Converter={StaticResource BoolToVisibilityConverter}}"
               Label="EOL"
-              Value="Build"
-              BadgeFontSize="{StaticResource FontSize.Badge}"
               LabelBackground="{StaticResource Badge.Eol.Label}"
+              ToolTipService.ToolTip="Out of support"
               ValueBackground="{StaticResource Badge.Eol.Value}"
-               />
+              Visibility="{Binding IsOutOfSupport, Converter={StaticResource BoolToVisibilityConverter}}"
+              Value="Build" />
             <!--  Architecture badge  -->
             <controls:TwoPartBadge
               Label="Arch"
-              Value="{Binding Architecture}"
-              BadgeFontSize="{StaticResource FontSize.Badge}"
               LabelBackground="{StaticResource Badge.Arch.Label}"
               ValueBackground="{StaticResource Badge.Arch.Value}"
-              
-               />
+              Value="{Binding Architecture}" />
             <!--  SubType badge  -->
             <controls:TwoPartBadge
-              Visibility="{Binding SubType, Converter={StaticResource NullToVisibilityConverter}}"
-              Label="Type"
-              Value="{Binding SubType}"
               BadgeFontSize="11"
+              Label="Type"
               LabelBackground="{StaticResource Badge.SubType.Label}"
               ValueBackground="{StaticResource Badge.SubType.Value}"
-               />
+              Visibility="{Binding SubType, Converter={StaticResource NullToVisibilityConverter}}"
+              Value="{Binding SubType}" />
             <!--  Reason badge (single segment)  -->
-            <controls:SingleBadge
-              Visibility="{Binding Reason, Converter={StaticResource NullToVisibilityConverter}}"
-              Background="{StaticResource Badge.Reason.Background}">
+            <controls:SingleBadge Background="{StaticResource Badge.Reason.Background}" Visibility="{Binding Reason, Converter={StaticResource NullToVisibilityConverter}}">
               <TextBlock
                 MaxWidth="260"
+                VerticalAlignment="Center"
                 FontSize="{StaticResource FontSize.Badge}"
                 Foreground="White"
-                VerticalAlignment="Center"
                 Text="{Binding Reason}"
                 TextTrimming="CharacterEllipsis" />
             </controls:SingleBadge>
             <!--  Removable badge  -->
             <controls:TwoPartBadge
-              Visibility="{Binding CanUninstall, Converter={StaticResource BoolToVisibilityConverter}}"
               Label="State"
-              Value="Removable"
-              BadgeFontSize="{StaticResource FontSize.Badge}"
               LabelBackground="{StaticResource Badge.State.Label}"
               ValueBackground="{StaticResource Badge.State.Value}"
-               />
+              Visibility="{Binding CanUninstall, Converter={StaticResource BoolToVisibilityConverter}}"
+              Value="Removable" />
           </StackPanel>
         </StackPanel>
         <Button

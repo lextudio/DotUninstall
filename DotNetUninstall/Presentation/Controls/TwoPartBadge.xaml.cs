@@ -1,8 +1,8 @@
 using Microsoft.UI.Xaml;
 using Microsoft.UI.Xaml.Controls;
-using Microsoft.UI.Xaml.Media;
-using Microsoft.UI.Xaml.Data;
 using Microsoft.UI.Xaml.Controls.Primitives;
+using Microsoft.UI.Xaml.Data;
+using Microsoft.UI.Xaml.Media;
 
 namespace DotNetUninstall.Presentation.Controls;
 
@@ -171,7 +171,7 @@ public sealed partial class TwoPartBadge : UserControl
         set => SetValue(LabelCornerRadiusProperty, value);
     }
     public static readonly DependencyProperty LabelCornerRadiusProperty =
-        DependencyProperty.Register(nameof(LabelCornerRadius), typeof(CornerRadius), typeof(TwoPartBadge), new PropertyMetadata(new CornerRadius(4,0,0,4)));
+        DependencyProperty.Register(nameof(LabelCornerRadius), typeof(CornerRadius), typeof(TwoPartBadge), new PropertyMetadata(new CornerRadius(4, 0, 0, 4)));
 
     public CornerRadius ValueCornerRadius
     {
@@ -179,7 +179,7 @@ public sealed partial class TwoPartBadge : UserControl
         set => SetValue(ValueCornerRadiusProperty, value);
     }
     public static readonly DependencyProperty ValueCornerRadiusProperty =
-        DependencyProperty.Register(nameof(ValueCornerRadius), typeof(CornerRadius), typeof(TwoPartBadge), new PropertyMetadata(new CornerRadius(0,4,4,0)));
+        DependencyProperty.Register(nameof(ValueCornerRadius), typeof(CornerRadius), typeof(TwoPartBadge), new PropertyMetadata(new CornerRadius(0, 4, 4, 0)));
     #endregion
 
     #region FontSize

@@ -89,9 +89,9 @@ public sealed class ChannelGroup
         EolDate = eolDate;
         MauiEolDate = mauiEolDate;
         LatestSdkVersion = latestSdkVersion;
-    LatestRuntimeVersion = latestRuntimeVersion;
-    LatestSecuritySdkVersion = latestSecuritySdkVersion;
-    LatestSecurityRuntimeVersion = latestSecurityRuntimeVersion;
+        LatestRuntimeVersion = latestRuntimeVersion;
+        LatestSecuritySdkVersion = latestSecuritySdkVersion;
+        LatestSecurityRuntimeVersion = latestSecurityRuntimeVersion;
         IsSdkGroup = isSdkGroup;
         // Determine if latest versions are installed (simple string match)
         if (!string.IsNullOrWhiteSpace(LatestSdkVersion))

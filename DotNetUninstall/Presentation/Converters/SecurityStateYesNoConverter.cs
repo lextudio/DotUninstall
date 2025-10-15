@@ -1,6 +1,6 @@
 using System;
-using Microsoft.UI.Xaml.Data;
 using DotNetUninstall.Models;
+using Microsoft.UI.Xaml.Data;
 
 namespace DotNetUninstall.Presentation.Converters;
 

@@ -1,0 +1,19 @@
+<ResourceDictionary
+  xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+  xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+  xmlns:controls="using:DotNetUninstall.Presentation.Controls">
+
+  <!-- Using existing FontSize.Badge resource directly; add alias if needed in future. -->
+
+  <!-- Implicit style for TwoPartBadge to provide default font size and vertical alignment -->
+  <Style TargetType="controls:TwoPartBadge">
+    <Setter Property="BadgeFontSize" Value="{StaticResource FontSize.Badge}" />
+    <!-- Additional common setters could go here (Padding inside borders is in control template) -->
+  </Style>
+
+  <!-- Implicit style for SingleBadge -->
+  <Style TargetType="controls:SingleBadge">
+    <Setter Property="FontSize" Value="{StaticResource FontSize.Badge}" />
+  </Style>
+
+</ResourceDictionary>

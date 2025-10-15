@@ -579,9 +579,9 @@ public partial class MainViewModel : ObservableObject
                         }
                         void AddSdk(string? v) { if (!string.IsNullOrWhiteSpace(v)) { resolved.SdkVersions.Add(v); if (sec) resolved.SecurityVersions.Add(v); } }
                         void AddRuntime(string? v) { if (!string.IsNullOrWhiteSpace(v)) { resolved.RuntimeVersions.Add(v); if (sec) resolved.SecurityVersions.Add(v); } }
-                        #pragma warning disable CS8602
+#pragma warning disable CS8602
                         var localSdk = r.Sdk;
-                        #pragma warning restore CS8602
+#pragma warning restore CS8602
                         if (localSdk is not null)
                         {
                             var sdkVerTmp = localSdk.Version;

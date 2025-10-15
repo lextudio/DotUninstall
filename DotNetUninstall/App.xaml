@@ -1,20 +1,23 @@
-<Application x:Class="DotNetUninstall.App"
-       xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
-       xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml">
+<Application
+  x:Class="DotNetUninstall.App"
+  xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+  xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml">
 
   <Application.Resources>
     <ResourceDictionary>
       <ResourceDictionary.MergedDictionaries>
-        <!-- Load WinUI resources -->
+        <!--  Load WinUI resources  -->
         <XamlControlsResources xmlns="using:Microsoft.UI.Xaml.Controls" />
-        <!-- Load Uno.UI.Toolkit resources -->
+        <!--  Load Uno.UI.Toolkit resources  -->
         <ToolkitResources xmlns="using:Uno.Toolkit.UI" />
-        <!-- Centralized color resources -->
+        <!--  Centralized color resources  -->
         <ResourceDictionary Source="/Presentation/Resources/Colors.xaml" />
+        <!--  Badge shared styles  -->
+        <ResourceDictionary Source="/Presentation/Resources/BadgeStyles.xaml" />
       </ResourceDictionary.MergedDictionaries>
 
-    <!-- No local color resources here. All Badge/Security/Latest/Lifecycle/Banner brushes live in Colors.xaml. -->
-    <conv:StringNotNullOrEmptyToVisibilityConverter x:Key="StringNotNullOrEmptyToVisibilityConverter" xmlns:conv="using:DotNetUninstall.Presentation.Converters" />
+      <!--  No local color resources here. All Badge/Security/Latest/Lifecycle/Banner brushes live in Colors.xaml.  -->
+      <conv:StringNotNullOrEmptyToVisibilityConverter xmlns:conv="using:DotNetUninstall.Presentation.Converters" x:Key="StringNotNullOrEmptyToVisibilityConverter" />
 
     </ResourceDictionary>
   </Application.Resources>
