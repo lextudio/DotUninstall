@@ -4,6 +4,7 @@
   xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
   xmlns:conv="using:DotNetUninstall.Presentation.Converters"
   xmlns:sys="using:System"
+  xmlns:controls="using:DotNetUninstall.Presentation.Controls"
   x:Name="RootPage"
   Background="{ThemeResource ApplicationPageBackgroundThemeBrush}">
   <Page.Resources>
@@ -51,306 +52,79 @@
               Orientation="Horizontal"
               Spacing="8">
               <!--  Release Type (e.g., LTS | 8)  -->
-              <Grid Visibility="{Binding ReleaseType, Converter={StaticResource NullToVisibilityConverter}}">
-                <Grid.ColumnDefinitions>
-                  <ColumnDefinition />
-                  <ColumnDefinition />
-                </Grid.ColumnDefinitions>
-                <Border
-                  Grid.Column="0"
-                  Padding="5,2"
-                  Background="{StaticResource Badge.Release.Label}"
-                  CornerRadius="4,0,0,4">
-                  <TextBlock
-                    FontSize="{StaticResource FontSize.Badge}"
-                    FontWeight="SemiBold"
-                    Foreground="White"
-                    Text="Type" />
-                </Border>
-                <Border
-                  Grid.Column="1"
-                  Padding="5,2"
-                  Background="{StaticResource Badge.Release.Value}"
-                  CornerRadius="0">
-                  <StackPanel Orientation="Horizontal" Spacing="2">
-                    <TextBlock
-                      FontSize="{StaticResource FontSize.Badge}"
-                      Foreground="White"
-                      Text="{Binding ReleaseType}" />
-                    <Button
-                      Grid.Column="2"
-                      Width="18"
-                      Height="18"
-                      Margin="2,0,0,0"
-                      Padding="0"
-                      Background="White"
-                      BorderThickness="0"
-                      Click="OnOpenChannelDownload"
-                      CornerRadius="9"
-                      Tag="{Binding ReleaseTypeInfoUrl}"
-                      ToolTipService.ToolTip="Learn more">
-                      <TextBlock
-                        HorizontalAlignment="Center"
-                        VerticalAlignment="Center"
-                        FontSize="10"
-                        FontWeight="Bold"
-                        Foreground="{StaticResource Badge.Release.Label}"
-                        Text="i" />
-                    </Button>
-                  </StackPanel>
-                </Border>
-
-              </Grid>
+              <controls:TwoPartBadge
+                Visibility="{Binding ReleaseType, Converter={StaticResource NullToVisibilityConverter}}"
+                Label="Type"
+                Value="{Binding ReleaseType}"
+                BadgeFontSize="{StaticResource FontSize.Badge}"
+                LabelBackground="{StaticResource Badge.Release.Label}"
+                ValueBackground="{StaticResource Badge.Release.Value}"
+                InfoTag="{Binding ReleaseTypeInfoUrl}"
+                InfoToolTip="Learn more"
+                InfoGlyphForeground="{StaticResource Badge.Release.Label}"
+                />
               <!--  Support Phase (Phase | value)  -->
-              <Grid Visibility="{Binding SupportPhase, Converter={StaticResource NullToVisibilityConverter}}">
-                <Grid.ColumnDefinitions>
-                  <ColumnDefinition />
-                  <ColumnDefinition />
-                </Grid.ColumnDefinitions>
-                <Border
-                  Grid.Column="0"
-                  Padding="5,2"
-                  Background="{StaticResource Badge.Support.Label}"
-                  CornerRadius="4,0,0,4">
-                  <TextBlock
-                    FontSize="{StaticResource FontSize.Badge}"
-                    FontWeight="SemiBold"
-                    Foreground="White"
-                    Text="Support" />
-                </Border>
-                <Border
-                  Grid.Column="1"
-                  Padding="5,2"
-                  Background="{StaticResource Badge.Support.Value}"
-                  CornerRadius="0">
-                  <StackPanel Orientation="Horizontal" Spacing="2">
-                    <TextBlock
-                      FontSize="{StaticResource FontSize.Badge}"
-                      Foreground="White"
-                      Text="{Binding SupportPhase}" />
-                    <Button
-                      Grid.Column="2"
-                      Width="18"
-                      Height="18"
-                      Margin="2,0,0,0"
-                      Padding="0"
-                      Background="White"
-                      BorderThickness="0"
-                      Click="OnOpenChannelDownload"
-                      CornerRadius="9"
-                      Tag="{Binding SupportPhaseInfoUrl}"
-                      ToolTipService.ToolTip="Learn more">
-                      <TextBlock
-                        HorizontalAlignment="Center"
-                        VerticalAlignment="Center"
-                        FontSize="10"
-                        FontWeight="Bold"
-                        Foreground="{StaticResource Badge.Support.Value}"
-                        Text="i" />
-                    </Button>
-                  </StackPanel>
-                </Border>
-              </Grid>
+              <controls:TwoPartBadge
+                Visibility="{Binding SupportPhase, Converter={StaticResource NullToVisibilityConverter}}"
+                Label="Support"
+                Value="{Binding SupportPhase}"
+                BadgeFontSize="{StaticResource FontSize.Badge}"
+                LabelBackground="{StaticResource Badge.Support.Label}"
+                ValueBackground="{StaticResource Badge.Support.Value}"
+                InfoTag="{Binding SupportPhaseInfoUrl}"
+                InfoToolTip="Learn more"
+                InfoGlyphForeground="{StaticResource Badge.Support.Value}"
+                />
               <!--  EOL badge (EOL | date)  -->
-              <Grid ToolTipService.ToolTip="{Binding EolDisplay}" Visibility="{Binding EolDateValue, Converter={StaticResource NullToVisibilityConverter}}">
-                <Grid.ColumnDefinitions>
-                  <ColumnDefinition />
-                  <ColumnDefinition />
-                </Grid.ColumnDefinitions>
-                <Border
-                  Grid.Column="0"
-                  Padding="5,2"
-                  Background="{StaticResource Badge.Eol.Label}"
-                  CornerRadius="4,0,0,4">
-                  <TextBlock
-                    FontSize="{StaticResource FontSize.Badge}"
-                    FontWeight="SemiBold"
-                    Foreground="White"
-                    Text="EOL" />
-                </Border>
-                <Border
-                  Grid.Column="1"
-                  Padding="5,2"
-                  Background="{StaticResource Badge.Eol.Value}"
-                  CornerRadius="0">
-                  <StackPanel Orientation="Horizontal" Spacing="2">
-                    <TextBlock
-                      FontSize="{StaticResource FontSize.Badge}"
-                      Foreground="White"
-                      Text="{Binding EolDateValue}" />
-                    <Button
-                      Grid.Column="2"
-                      Width="18"
-                      Height="18"
-                      Margin="2,0,0,0"
-                      Padding="0"
-                      Background="White"
-                      BorderThickness="0"
-                      Click="OnOpenChannelDownload"
-                      CornerRadius="9"
-                      Tag="{Binding EolInfoUrl}"
-                      ToolTipService.ToolTip="Learn more"
-                      Visibility="{Binding EolInfoUrl, Converter={StaticResource NullToVisibilityConverter}}">
-                      <TextBlock
-                        HorizontalAlignment="Center"
-                        VerticalAlignment="Center"
-                        FontSize="10"
-                        FontWeight="Bold"
-                        Foreground="{StaticResource Badge.Eol.Value}"
-                        Text="i" />
-                    </Button>
-                  </StackPanel>
-                </Border>
-              </Grid>
+              <controls:TwoPartBadge
+                ToolTipService.ToolTip="{Binding EolDisplay}"
+                Visibility="{Binding EolDateValue, Converter={StaticResource NullToVisibilityConverter}}"
+                Label="EOL"
+                Value="{Binding EolDateValue}"
+                BadgeFontSize="{StaticResource FontSize.Badge}"
+                LabelBackground="{StaticResource Badge.Eol.Label}"
+                ValueBackground="{StaticResource Badge.Eol.Value}"
+                InfoTag="{Binding EolInfoUrl}"
+                InfoToolTip="Learn more"
+                InfoGlyphForeground="{StaticResource Badge.Eol.Value}"
+                />
               <!--  MAUI EOL badge (MAUI EOL | date)  -->
-              <Grid ToolTipService.ToolTip="MAUI End of life" Visibility="{Binding MauiEolDateValue, Converter={StaticResource NullToVisibilityConverter}}">
-                <Grid.ColumnDefinitions>
-                  <ColumnDefinition />
-                  <ColumnDefinition />
-                </Grid.ColumnDefinitions>
-                <Border
-                  Grid.Column="0"
-                  Padding="5,2"
-                  Background="{StaticResource Badge.MauiEol.Label}"
-                  CornerRadius="4,0,0,4">
-                  <TextBlock
-                    FontSize="{StaticResource FontSize.Badge}"
-                    FontWeight="SemiBold"
-                    Foreground="White"
-                    Text="MAUI EOL" />
-                </Border>
-                <Border
-                  Grid.Column="1"
-                  Padding="5,2"
-                  Background="{StaticResource Badge.MauiEol.Value}"
-                  CornerRadius="0">
-                  <StackPanel Orientation="Horizontal" Spacing="2">
-                    <TextBlock
-                      FontSize="{StaticResource FontSize.Badge}"
-                      Foreground="White"
-                      Text="{Binding MauiEolDateValue}" />
-                    <Button
-                      Grid.Column="2"
-                      Width="18"
-                      Height="18"
-                      Margin="2,0,0,0"
-                      Padding="0"
-                      Background="White"
-                      BorderThickness="0"
-                      Click="OnOpenChannelDownload"
-                      CornerRadius="9"
-                      Tag="{Binding MauiEolInfoUrl}"
-                      ToolTipService.ToolTip="Learn more"
-                      Visibility="{Binding MauiEolInfoUrl, Converter={StaticResource NullToVisibilityConverter}}">
-                      <TextBlock
-                        HorizontalAlignment="Center"
-                        VerticalAlignment="Center"
-                        FontSize="10"
-                        FontWeight="Bold"
-                        Foreground="{StaticResource Badge.MauiEol.Value}"
-                        Text="i" />
-                    </Button>
-                  </StackPanel>
-                </Border>
-              </Grid>
+              <controls:TwoPartBadge
+                ToolTipService.ToolTip="MAUI End of life"
+                Visibility="{Binding MauiEolDateValue, Converter={StaticResource NullToVisibilityConverter}}"
+                Label="MAUI EOL"
+                Value="{Binding MauiEolDateValue}"
+                BadgeFontSize="{StaticResource FontSize.Badge}"
+                LabelBackground="{StaticResource Badge.MauiEol.Label}"
+                ValueBackground="{StaticResource Badge.MauiEol.Value}"
+                InfoTag="{Binding MauiEolInfoUrl}"
+                InfoToolTip="Learn more"
+                InfoGlyphForeground="{StaticResource Badge.MauiEol.Value}"
+                />
               <!--  Latest missing (normal)  -->
-              <Grid Visibility="{Binding ShowLatestRelevantMissingNormal, Converter={StaticResource BoolToVisibilityConverter}}">
-                <Grid.ColumnDefinitions>
-                  <ColumnDefinition />
-                  <ColumnDefinition />
-                </Grid.ColumnDefinitions>
-                <Border
-                  Grid.Column="0"
-                  Padding="5,2"
-                  Background="{StaticResource Badge.Latest.Label}"
-                  CornerRadius="4,0,0,4">
-                  <TextBlock
-                    FontSize="{StaticResource FontSize.Badge}"
-                    FontWeight="SemiBold"
-                    Foreground="White"
-                    Text="Latest" />
-                </Border>
-                <Border
-                  Grid.Column="1"
-                  Padding="5,2"
-                  Background="{StaticResource Badge.Latest.Value}"
-                  CornerRadius="0,4,4,0">
-                  <StackPanel Orientation="Horizontal" Spacing="2">
-                    <TextBlock
-                      FontSize="{StaticResource FontSize.Badge}"
-                      Foreground="White"
-                      Text="{Binding LatestRelevantVersion}" />
-                    <Button
-                      Width="18"
-                      Height="18"
-                      Margin="2,0,0,0"
-                      Padding="0"
-                      Background="White"
-                      BorderThickness="0"
-                      Click="OnOpenChannelDownload"
-                      CornerRadius="9"
-                      Tag="{Binding ChannelDownloadUrl}"
-                      ToolTipService.ToolTip="Download">
-                      <TextBlock
-                        HorizontalAlignment="Center"
-                        VerticalAlignment="Center"
-                        FontSize="{StaticResource FontSize.Badge}"
-                        FontWeight="Bold"
-                        Foreground="{StaticResource Badge.Latest.Value}"
-                        Text="i" />
-                    </Button>
-                  </StackPanel>
-                </Border>
-              </Grid>
+              <controls:TwoPartBadge
+                Visibility="{Binding ShowLatestRelevantMissingNormal, Converter={StaticResource BoolToVisibilityConverter}}"
+                Label="Latest"
+                Value="{Binding LatestRelevantVersion}"
+                BadgeFontSize="{StaticResource FontSize.Badge}"
+                LabelBackground="{StaticResource Badge.Latest.Label}"
+                ValueBackground="{StaticResource Badge.Latest.Value}"
+                InfoTag="{Binding ChannelDownloadUrl}"
+                InfoToolTip="Download"
+                InfoGlyphForeground="{StaticResource Badge.Latest.Value}"
+                />
               <!--  Latest missing (security)  -->
-              <Grid Visibility="{Binding ShowLatestRelevantMissingSecurity, Converter={StaticResource BoolToVisibilityConverter}}">
-                <Grid.ColumnDefinitions>
-                  <ColumnDefinition />
-                  <ColumnDefinition />
-                </Grid.ColumnDefinitions>
-                <Border
-                  Grid.Column="0"
-                  Padding="5,2"
-                  Background="{StaticResource Brush.Security.Alert}"
-                  CornerRadius="4,0,0,4">
-                  <TextBlock
-                    FontSize="{StaticResource FontSize.Badge}"
-                    FontWeight="SemiBold"
-                    Foreground="White"
-                    Text="Latest" />
-                </Border>
-                <Border
-                  Grid.Column="1"
-                  Padding="5,2"
-                  Background="{StaticResource Brush.Security.Warning}"
-                  CornerRadius="0,4,4,0">
-                  <StackPanel Orientation="Horizontal" Spacing="2">
-                    <TextBlock
-                      FontSize="{StaticResource FontSize.Badge}"
-                      Foreground="White"
-                      Text="{Binding LatestRelevantVersion}" />
-                    <Button
-                      Width="18"
-                      Height="18"
-                      Margin="2,0,0,0"
-                      Padding="0"
-                      Background="White"
-                      BorderThickness="0"
-                      Click="OnOpenChannelDownload"
-                      CornerRadius="9"
-                      Tag="{Binding ChannelDownloadUrl}"
-                      ToolTipService.ToolTip="Download">
-                      <TextBlock
-                        HorizontalAlignment="Center"
-                        VerticalAlignment="Center"
-                        FontSize="{StaticResource FontSize.Badge}"
-                        FontWeight="Bold"
-                        Foreground="{StaticResource Brush.Security.Alert}"
-                        Text="i" />
-                    </Button>
-                  </StackPanel>
-                </Border>
-              </Grid>
+              <controls:TwoPartBadge
+                Visibility="{Binding ShowLatestRelevantMissingSecurity, Converter={StaticResource BoolToVisibilityConverter}}"
+                Label="Latest"
+                Value="{Binding LatestRelevantVersion}"
+                BadgeFontSize="{StaticResource FontSize.Badge}"
+                LabelBackground="{StaticResource Brush.Security.Alert}"
+                ValueBackground="{StaticResource Brush.Security.Warning}"
+                InfoTag="{Binding ChannelDownloadUrl}"
+                InfoToolTip="Download"
+                InfoGlyphForeground="{StaticResource Brush.Security.Alert}"
+                />
             </StackPanel>
             <ListView
               ItemTemplate="{StaticResource InstallEntryTemplate}"
@@ -379,6 +153,7 @@
               MaxWidth="360"
               FontSize="{StaticResource FontSize.Badge}"
               Opacity="0.65"
+              VerticalAlignment="Center"
               Text="{Binding DisplayName}"
               TextTrimming="CharacterEllipsis" />
           </StackPanel>
@@ -387,255 +162,85 @@
             Orientation="Horizontal"
             Spacing="6">
             <!--  Release Date badge: Release|yyyy-MM-dd with notes link  -->
-            <Grid ToolTipService.ToolTip="View release notes" Visibility="{Binding ReleaseDate, Converter={StaticResource NullToVisibilityConverter}}">
-              <Grid.ColumnDefinitions>
-                <ColumnDefinition />
-                <ColumnDefinition />
-              </Grid.ColumnDefinitions>
-              <Border
-                Grid.Column="0"
-                Padding="5,2"
-                Background="{StaticResource Badge.ReleaseDate.Label}"
-                CornerRadius="4,0,0,4">
-                <TextBlock
-                  FontSize="{StaticResource FontSize.Badge}"
-                  FontWeight="SemiBold"
-                  Foreground="White"
-                  Text="Release" />
-              </Border>
-              <Border
-                Grid.Column="1"
-                Padding="5,2"
-                Background="{StaticResource Badge.ReleaseDate.Value}"
-                CornerRadius="0">
-                <StackPanel Orientation="Horizontal" Spacing="2">
-                  <TextBlock
-                    FontSize="{StaticResource FontSize.Badge}"
-                    Foreground="White"
-                    Text="{Binding ReleaseDateValue}" />
-                  <Button
-                    Grid.Column="2"
-                    Width="18"
-                    Height="18"
-                    Margin="2,0,0,0"
-                    Padding="0"
-                    Background="White"
-                    BorderThickness="0"
-                    Click="OnOpenChannelDownload"
-                    CornerRadius="9"
-                    Tag="{Binding ReleaseNotesUrl}"
-                    ToolTipService.ToolTip="Open release notes"
-                    Visibility="{Binding ReleaseNotesUrl, Converter={StaticResource NullToVisibilityConverter}}">
-                    <TextBlock
-                      HorizontalAlignment="Center"
-                      VerticalAlignment="Center"
-                      FontSize="10"
-                      FontWeight="Bold"
-                      Foreground="{StaticResource Badge.ReleaseDate.Label}"
-                      Text="i" />
-                  </Button>
-                </StackPanel>
-              </Border>
-            </Grid>
+            <controls:TwoPartBadge
+              ToolTipService.ToolTip="View release notes"
+              Visibility="{Binding ReleaseDate, Converter={StaticResource NullToVisibilityConverter}}"
+              Label="Release"
+              Value="{Binding ReleaseDateValue}"
+              BadgeFontSize="{StaticResource FontSize.Badge}"
+              LabelBackground="{StaticResource Badge.ReleaseDate.Label}"
+              ValueBackground="{StaticResource Badge.ReleaseDate.Value}"
+              InfoTag="{Binding ReleaseNotesUrl}"
+              InfoToolTip="Open release notes"
+              InfoGlyphForeground="{StaticResource Badge.ReleaseDate.Label}"
+              />
             <!--  Stage badge: Stage|GA or Stage|Preview N / Stage|RC N  -->
-            <Grid ToolTipService.ToolTip="Release stage">
-              <Grid.ColumnDefinitions>
-                <ColumnDefinition />
-                <ColumnDefinition />
-              </Grid.ColumnDefinitions>
-              <Border
-                Grid.Column="0"
-                Padding="5,2"
-                Background="{StaticResource Badge.Stage.Label}"
-                CornerRadius="4,0,0,4">
-                <TextBlock
-                  FontSize="{StaticResource FontSize.Badge}"
-                  FontWeight="SemiBold"
-                  Foreground="White"
-                  Text="Stage" />
-              </Border>
-              <Border
-                Grid.Column="1"
-                Padding="5,2"
-                Background="{StaticResource Badge.Stage.Value}"
-                CornerRadius="0,4,4,0">
-                <StackPanel Orientation="Horizontal" Spacing="4">
-                  <!--  Simpler: bind text via MultiBinding concept is heavier; use conditional visibility blocks  -->
-                  <TextBlock
-                    FontSize="{StaticResource FontSize.Badge}"
-                    Foreground="White"
-                    Text="GA"
-                    Visibility="{Binding IsGa, Converter={StaticResource BoolToVisibilityConverter}}" />
-                  <StackPanel
-                    Orientation="Horizontal"
-                    Spacing="2"
-                    Visibility="{Binding IsGa, Converter={StaticResource InverseBoolToVisibilityConverter}}">
-                    <TextBlock
-                      FontSize="{StaticResource FontSize.Badge}"
-                      Foreground="White"
-                      Text="{Binding PreviewKindDisplay}" />
-                    <TextBlock
-                      FontSize="{StaticResource FontSize.Badge}"
-                      Foreground="White"
-                      Text="{Binding PreviewNumber}"
-                      Visibility="{Binding PreviewNumber, Converter={StaticResource NullToVisibilityConverter}}" />
-                  </StackPanel>
-                </StackPanel>
-              </Border>
-            </Grid>
+            <controls:TwoPartBadge
+              ToolTipService.ToolTip="Release stage"
+              Label="Stage"
+              Value="{Binding StageDisplay}"
+              Visibility="{Binding StageDisplay, Converter={StaticResource NullToVisibilityConverter}}"
+              BadgeFontSize="{StaticResource FontSize.Badge}"
+              LabelBackground="{StaticResource Badge.Stage.Label}"
+              ValueBackground="{StaticResource Badge.Stage.Value}" />
             <!--  Simplified secure status badge: Secure|Yes or Secure|No  -->
-            <Grid ToolTipService.ToolTip="{Binding SecurityTooltip}">
-              <Grid.ColumnDefinitions>
-                <ColumnDefinition />
-                <ColumnDefinition />
-              </Grid.ColumnDefinitions>
-              <Border
-                Grid.Column="0"
-                Padding="5,2"
-                Background="{StaticResource Badge.Security.Label}"
-                CornerRadius="4,0,0,4">
-                <TextBlock
-                  FontSize="{StaticResource FontSize.Badge}"
-                  FontWeight="SemiBold"
-                  Foreground="White"
-                  Text="Secure" />
-              </Border>
-              <Border
-                Grid.Column="1"
-                Padding="5,2"
-                Background="{StaticResource Badge.Security.Value}"
-                CornerRadius="0,4,4,0">
-                <TextBlock
-                  FontSize="{StaticResource FontSize.Badge}"
-                  Foreground="White"
-                  Text="{Binding SecurityStatus, Converter={StaticResource SecurityStateYesNoConverter}}" />
-              </Border>
-            </Grid>
+            <controls:TwoPartBadge
+              ToolTipService.ToolTip="{Binding SecurityTooltip}"
+              Label="Secure"
+              Value="{Binding SecurityStatus, Converter={StaticResource SecurityStateYesNoConverter}}"
+              BadgeFontSize="{StaticResource FontSize.Badge}"
+              LabelBackground="{StaticResource Badge.Security.Label}"
+              ValueBackground="{StaticResource Badge.Security.Value}"
+               />
             <!--  Out of support badge  -->
-            <Grid ToolTipService.ToolTip="Out of support" Visibility="{Binding IsOutOfSupport, Converter={StaticResource BoolToVisibilityConverter}}">
-              <Grid.ColumnDefinitions>
-                <ColumnDefinition />
-                <ColumnDefinition />
-              </Grid.ColumnDefinitions>
-              <Border
-                Grid.Column="0"
-                Padding="5,2"
-                Background="{StaticResource Badge.Eol.Label}"
-                CornerRadius="4,0,0,4">
-                <TextBlock
-                  FontSize="{StaticResource FontSize.Badge}"
-                  FontWeight="SemiBold"
-                  Foreground="White"
-                  Text="EOL" />
-              </Border>
-              <Border
-                Grid.Column="1"
-                Padding="5,2"
-                Background="{StaticResource Badge.Eol.Value}"
-                CornerRadius="0,4,4,0">
-                <TextBlock
-                  FontSize="{StaticResource FontSize.Badge}"
-                  Foreground="White"
-                  Text="Build" />
-              </Border>
-            </Grid>
+            <controls:TwoPartBadge
+              ToolTipService.ToolTip="Out of support"
+              Visibility="{Binding IsOutOfSupport, Converter={StaticResource BoolToVisibilityConverter}}"
+              Label="EOL"
+              Value="Build"
+              BadgeFontSize="{StaticResource FontSize.Badge}"
+              LabelBackground="{StaticResource Badge.Eol.Label}"
+              ValueBackground="{StaticResource Badge.Eol.Value}"
+               />
             <!--  Architecture badge  -->
-            <Grid>
-              <Grid.ColumnDefinitions>
-                <ColumnDefinition />
-                <ColumnDefinition />
-              </Grid.ColumnDefinitions>
-              <Border
-                Grid.Column="0"
-                Padding="5,2"
-                Background="{StaticResource Badge.Arch.Label}"
-                CornerRadius="4,0,0,4">
-                <TextBlock
-                  FontSize="{StaticResource FontSize.Badge}"
-                  FontWeight="SemiBold"
-                  Foreground="White"
-                  Text="Arch" />
-              </Border>
-              <Border
-                Grid.Column="1"
-                Padding="5,2"
-                Background="{StaticResource Badge.Arch.Value}"
-                CornerRadius="0,4,4,0">
-                <TextBlock
-                  FontSize="{StaticResource FontSize.Badge}"
-                  Foreground="White"
-                  Text="{Binding Architecture}" />
-              </Border>
-            </Grid>
+            <controls:TwoPartBadge
+              Label="Arch"
+              Value="{Binding Architecture}"
+              BadgeFontSize="{StaticResource FontSize.Badge}"
+              LabelBackground="{StaticResource Badge.Arch.Label}"
+              ValueBackground="{StaticResource Badge.Arch.Value}"
+              
+               />
             <!--  SubType badge  -->
-            <Grid Visibility="{Binding SubType, Converter={StaticResource NullToVisibilityConverter}}">
-              <Grid.ColumnDefinitions>
-                <ColumnDefinition />
-                <ColumnDefinition />
-              </Grid.ColumnDefinitions>
-              <Border
-                Grid.Column="0"
-                Padding="5,2"
-                Background="{StaticResource Badge.SubType.Label}"
-                CornerRadius="4,0,0,4">
-                <TextBlock
-                  FontSize="{StaticResource FontSize.Badge}"
-                  FontWeight="SemiBold"
-                  Foreground="White"
-                  Text="Type" />
-              </Border>
-              <Border
-                Grid.Column="1"
-                Padding="5,2"
-                Background="{StaticResource Badge.SubType.Value}"
-                CornerRadius="0,4,4,0">
-                <TextBlock
-                  FontSize="11"
-                  Foreground="White"
-                  Text="{Binding SubType}" />
-              </Border>
-            </Grid>
-            <!--  Reason badge (kept single segment due to potential length)  -->
-            <Border
-              Padding="5,2"
-              Background="{StaticResource Badge.Reason.Background}"
-              CornerRadius="4"
-              Visibility="{Binding Reason, Converter={StaticResource NullToVisibilityConverter}}">
+            <controls:TwoPartBadge
+              Visibility="{Binding SubType, Converter={StaticResource NullToVisibilityConverter}}"
+              Label="Type"
+              Value="{Binding SubType}"
+              BadgeFontSize="11"
+              LabelBackground="{StaticResource Badge.SubType.Label}"
+              ValueBackground="{StaticResource Badge.SubType.Value}"
+               />
+            <!--  Reason badge (single segment)  -->
+            <controls:SingleBadge
+              Visibility="{Binding Reason, Converter={StaticResource NullToVisibilityConverter}}"
+              Background="{StaticResource Badge.Reason.Background}">
               <TextBlock
                 MaxWidth="260"
                 FontSize="{StaticResource FontSize.Badge}"
                 Foreground="White"
+                VerticalAlignment="Center"
                 Text="{Binding Reason}"
                 TextTrimming="CharacterEllipsis" />
-            </Border>
+            </controls:SingleBadge>
             <!--  Removable badge  -->
-            <Grid Visibility="{Binding CanUninstall, Converter={StaticResource BoolToVisibilityConverter}}">
-              <Grid.ColumnDefinitions>
-                <ColumnDefinition />
-                <ColumnDefinition />
-              </Grid.ColumnDefinitions>
-              <Border
-                Grid.Column="0"
-                Padding="5,2"
-                Background="{StaticResource Badge.State.Label}"
-                CornerRadius="4,0,0,4">
-                <TextBlock
-                  FontSize="{StaticResource FontSize.Badge}"
-                  FontWeight="SemiBold"
-                  Foreground="White"
-                  Text="State" />
-              </Border>
-              <Border
-                Grid.Column="1"
-                Padding="5,2"
-                Background="{StaticResource Badge.State.Value}"
-                CornerRadius="0,4,4,0">
-                <TextBlock
-                  FontSize="{StaticResource FontSize.Badge}"
-                  Foreground="White"
-                  Text="Removable" />
-              </Border>
-            </Grid>
+            <controls:TwoPartBadge
+              Visibility="{Binding CanUninstall, Converter={StaticResource BoolToVisibilityConverter}}"
+              Label="State"
+              Value="Removable"
+              BadgeFontSize="{StaticResource FontSize.Badge}"
+              LabelBackground="{StaticResource Badge.State.Label}"
+              ValueBackground="{StaticResource Badge.State.Value}"
+               />
           </StackPanel>
         </StackPanel>
         <Button

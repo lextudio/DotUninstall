@@ -65,6 +65,27 @@ public partial record DotnetInstallEntry
     public string? ReleaseDateValue => ReleaseDate?.ToString("yyyy-MM-dd");
     /// <summary>Release notes URL if provided in the metadata.</summary>
     public string? ReleaseNotesUrl { get; init; }
+
+    /// <summary>
+    /// Computed stage display string used by UI badges. Simplifies XAML by removing custom ValueContent.
+    /// Rules:
+    ///  - If <see cref="IsGa"/> or PreviewKind == "ga": returns "GA".
+    ///  - Else if PreviewKindDisplay plus optional PreviewNumber => e.g. "Preview 3" or "RC 1".
+    ///  - Falls back to PreviewKindDisplay if number absent; returns null when PreviewKind unknown.
+    /// </summary>
+    public string? StageDisplay
+    {
+        get
+        {
+            if (IsGa) return "GA";
+            if (string.IsNullOrEmpty(PreviewKindDisplay)) return null;
+            if (PreviewNumber is int n and > 0)
+            {
+                return $"{PreviewKindDisplay} {n}";
+            }
+            return PreviewKindDisplay;
+        }
+    }
 }
 
 /// <summary>

@@ -14,6 +14,7 @@
       </ResourceDictionary.MergedDictionaries>
 
     <!-- No local color resources here. All Badge/Security/Latest/Lifecycle/Banner brushes live in Colors.xaml. -->
+    <conv:StringNotNullOrEmptyToVisibilityConverter x:Key="StringNotNullOrEmptyToVisibilityConverter" xmlns:conv="using:DotNetUninstall.Presentation.Converters" />
 
     </ResourceDictionary>
   </Application.Resources>
