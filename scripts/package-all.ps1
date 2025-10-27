@@ -48,7 +48,7 @@ if (-not $SkipWindows) {
   $winScript = Join-Path $PSScriptRoot 'package-windows.ps1'
   $winParams = @{ Configuration = $Configuration }
   if (-not $SkipSelfContained) { $winParams.SelfContained = $true }
-  if (-not $SkipTrim) { $winParams.Trim = $true }
+  # if (-not $SkipTrim) { $winParams.Trim = $true }
   $WingetManifestsOut = 'winget'
   if ($WingetManifestsOut) {
     # If relative, place under artifacts (e.g. artifacts/winget)
