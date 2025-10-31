@@ -40,9 +40,55 @@ Managing many installed .NET SDK and runtime versions becomes cumbersome. The of
 - If something fails, consider running the `dotnet-core-uninstall` tool manually for verbose diagnostics.
 - Not affiliated with Microsoft. Use at your own risk.
 
-## macOS Elevation Notes
+## macOS Notes
 
-On macOS you will be prompted to run the tool with `sudo` if you installed .NET SDKs/runtimes system-wide (e.g. in `/usr/local/share/dotnet`).
+### Gatekeeper / Unsigned App Launch
+
+The distributed macOS builds are currently not code signed or notarized. Gatekeeper blocks first launch with:
+
+> "DotUninstall" cannot be opened because the developer cannot be verified.
+
+Choose one method to allow it:
+
+1. Right‑click the app bundle (`DotUninstall (arm64).app` or `DotUninstall (x64).app`) and select Open, then Open again in the dialog (Gatekeeper remembers).
+1. Double‑click (blocked), then open System Settings → Privacy & Security, click Allow Anyway, relaunch and confirm.
+1. Remove the quarantine flag (CLI approach):
+
+  ```bash
+  xattr -d com.apple.quarantine "/Applications/DotUninstall (arm64).app"  # adjust path if placed elsewhere
+  ```
+
+1. (Optional) Ad‑hoc sign locally to silence further warnings:
+
+  ```bash
+  codesign --force --deep --sign - "/Applications/DotUninstall (arm64).app"
+  spctl --assess --verbose "/Applications/DotUninstall (arm64).app"  # should report 'accepted'
+  ```
+
+#### Verify Download Integrity (Recommended)
+
+Compute SHA256 and compare with the value posted on the release page:
+
+```bash
+shasum -a 256 "DotUninstall-macos-<version>.dmg"
+```
+
+Proceed only if the hash matches. Always download from the official GitHub Releases page.
+
+#### Security Considerations
+
+- Removing quarantine or self‑signing trusts current contents; re‑download for updates rather than modifying internals.
+- Organizations can re‑sign/notarize internally if required.
+
+### Elevation / Permissions
+
+If you installed .NET SDKs/runtimes system-wide (typically under `/usr/local/share/dotnet`) some uninstall operations require elevated rights. The app will prompt and run the underlying `dotnet-core-uninstall` tool with `sudo` when needed. If you prefer the terminal you can also run:
+
+```bash
+sudo dotnet-core-uninstall list --aspnet-runtime --sdk --runtime
+```
+
+Home‑directory or user‑isolated installs (e.g. via `DOTNET_ROOT` pointing inside `$HOME`) generally do not need elevation.
 
 ## Run
 
