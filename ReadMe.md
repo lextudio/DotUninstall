@@ -82,13 +82,7 @@ Proceed only if the hash matches. Always download from the official GitHub Relea
 
 ### Elevation / Permissions
 
-If you installed .NET SDKs/runtimes system-wide (typically under `/usr/local/share/dotnet`) some uninstall operations require elevated rights. The app will prompt and run the underlying `dotnet-core-uninstall` tool with `sudo` when needed. If you prefer the terminal you can also run:
-
-```bash
-sudo dotnet-core-uninstall list --aspnet-runtime --sdk --runtime
-```
-
-Home‑directory or user‑isolated installs (e.g. via `DOTNET_ROOT` pointing inside `$HOME`) generally do not need elevation.
+If you installed .NET SDKs/runtimes system-wide (typically under `/usr/local/share/dotnet`) some uninstall operations require elevated rights. The app will prompt for your password via a standard macOS dialog when needed.
 
 ## Run
 
@@ -101,16 +95,9 @@ Release binaries are available on the [Releases](https://github.com/lextudio/Dot
 From repository root:
 
 ```bash
+git submodule update --init --recursive
 dotnet build DotNetUninstall/DotNetUninstall.csproj -c Debug
 dotnet run --project DotNetUninstall/DotNetUninstall.csproj
-```
-
-### Install via winget (Windows)
-
-You can install DotUninstall using the Windows Package Manager (winget):
-
-```powershell
-winget install lextudio.DotUninstall
 ```
 
 ## Project Structure (Simplified)
