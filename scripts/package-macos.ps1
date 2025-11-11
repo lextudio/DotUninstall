@@ -29,7 +29,9 @@ param(
   [string]$Configuration = 'Release',
   [switch]$Dmg,
   [string]$IconPath,
-  [switch]$VerifyIcon
+  [switch]$VerifyIcon,
+  [string]$MacMinVersion = '12.0',      # e.g. 12.0 ; if provided, will rewrite Mach-O LC_BUILD_VERSION minos
+  [string]$MacSdkVersion = '14.2'       # e.g. 14.2 ; optional, defaults to MacMinVersion if omitted
 )
 
 Set-StrictMode -Version Latest
@@ -77,6 +79,47 @@ foreach ($rid in $Rids) {
   if (-not $app) { throw "No .app bundle found for $rid (check Uno macOS target configuration)." }
   Info "Found bundle: $($app.FullName)"
   $bi = [BundleInfo]::new(); $bi.Rid = $rid; $bi.Path = $app.FullName; $AppBundles += $bi
+
+  # Optionally adjust Mach-O deployment target via vtool
+  if ($MacMinVersion) {
+    $exeName = 'DotNetUninstall'
+    $exePath = Join-Path $app.FullName "Contents/MacOS/$exeName"
+    if (-not (Test-Path $exePath)) { Warn "Executable not found for vtool edit: $exePath" }
+    else {
+      $vtool = Get-Command vtool -ErrorAction SilentlyContinue
+      if (-not $vtool) { Warn 'vtool not found (Xcode command-line tools). Skipping minos rewrite.' }
+      else {
+        if (-not $MacSdkVersion) { $MacSdkVersion = $MacMinVersion }
+        # Read current build info
+        $current = & vtool -show-build $exePath 2>$null
+        $currentMin = $null; $currentSdk = $null
+        if ($current) {
+          $m1 = [regex]::Match($current, 'minos\s+([0-9\.]+)')
+          if ($m1.Success) { $currentMin = $m1.Groups[1].Value }
+          $m2 = [regex]::Match($current, 'sdk\s+([0-9\.]+)')
+          if ($m2.Success) { $currentSdk = $m2.Groups[1].Value }
+        }
+        if ($currentMin -and $currentMin -eq $MacMinVersion -and $currentSdk -and $currentSdk -eq $MacSdkVersion) {
+          Info "Mach-O already has minos=$currentMin sdk=$currentSdk for $rid; skipping vtool rewrite."
+        } else {
+          Step "Setting Mach-O build version (minos=$MacMinVersion sdk=$MacSdkVersion) for $rid"
+          & vtool -set-build-version macos $MacMinVersion $MacSdkVersion -replace -output $exePath $exePath
+          $updated = & vtool -show-build $exePath 2>$null
+          if ($updated) { Write-Host $updated }
+          $updatedMin = $null; $updatedSdk = $null
+          $u1 = [regex]::Match($updated, 'minos\s+([0-9\.]+)')
+          if ($u1.Success) { $updatedMin = $u1.Groups[1].Value }
+          $u2 = [regex]::Match($updated, 'sdk\s+([0-9\.]+)')
+          if ($u2.Success) { $updatedSdk = $u2.Groups[1].Value }
+          if ($updatedMin -ne $MacMinVersion -or $updatedSdk -ne $MacSdkVersion) {
+            Warn "vtool rewrite verification failed (expected minos=$MacMinVersion sdk=$MacSdkVersion, saw minos=$updatedMin sdk=$updatedSdk)."
+          } else {
+            Info "vtool rewrite successful (minos=$updatedMin sdk=$updatedSdk)."
+          }
+        }
+      }
+    }
+  }
 
   if ($IconPath) {
     if (-not (Test-Path $IconPath)) { throw "Icon file not found: $IconPath" }
