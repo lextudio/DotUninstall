@@ -1036,37 +1036,36 @@ public partial class MainViewModel : ObservableObject
             var exe = Environment.ProcessPath;
             if (string.IsNullOrWhiteSpace(exe) || !File.Exists(exe)) return;
 
-            // Try to locate enclosing .app bundle root (AppName.app)
-            string launchTarget = exe; // fallback
+            // Derive bundle executable (prefer launching the actual binary, not using 'open').
+            string launchTarget = exe; // default fallback
             try
             {
-                var exeDir = Path.GetDirectoryName(exe);
-                // Expect .../Something.app/Contents/MacOS
-                var contentsDir = Directory.GetParent(exeDir ?? string.Empty);
-                var appRoot = contentsDir?.Parent?.FullName;
+                var exeDir = Path.GetDirectoryName(exe) ?? string.Empty;
+                var contentsDir = Directory.GetParent(exeDir); // .../Contents/MacOS
+                var appRoot = contentsDir?.Parent?.FullName;   // .../AppName.app
                 if (!string.IsNullOrWhiteSpace(appRoot) && appRoot.EndsWith(".app", StringComparison.OrdinalIgnoreCase) && Directory.Exists(appRoot))
                 {
-                    launchTarget = appRoot; // Use bundle root
+                    var candidate = Path.Combine(appRoot, "Contents", "MacOS", Path.GetFileName(exe));
+                    if (File.Exists(candidate)) launchTarget = candidate;
                 }
             }
             catch { }
 
-            bool isBundle = launchTarget.EndsWith(".app", StringComparison.OrdinalIgnoreCase);
-            string commandPart;
-            if (isBundle)
+            // Escape for shell inside AppleScript (we wrap in double quotes).
+            string EscapeForShell(string s) => s.Replace("\\", "\\\\").Replace("\"", "\\\"");
+            // Preserve original command-line arguments (so hosts like 'dotnet' get their args, e.g. 'run')
+            var rawArgs = Environment.GetCommandLineArgs();
+            string argsPart = string.Empty;
+            if (rawArgs != null && rawArgs.Length > 0)
             {
-                // Use 'open' with the bundle so macOS treats it as an app launch.
-                // Using open under administrator privileges will prompt and then start the app root.
-                string escBundle = launchTarget.Replace("'", "'\\''");
-                commandPart = $"open '{escBundle}'";
+                var quoted = rawArgs.Select(a => $"\"{EscapeForShell(a)}\"");
+                argsPart = " " + string.Join(' ', quoted);
             }
-            else
-            {
-                string escExe = launchTarget.Replace("'", "'\\''");
-                commandPart = $"'{escExe}'";
-            }
-
-            var appleScript = $"do shell script \"{commandPart}\" with administrator privileges";
+            // Build the shell command (one single string) and then escape it for embedding in AppleScript.
+            var shellCmd = $"\"{EscapeForShell(launchTarget)}\"{argsPart}";
+            // AppleScript string literal needs backslashes and quotes escaped again
+            var appleScriptInner = shellCmd.Replace("\\", "\\\\").Replace("\"", "\\\"");
+            var appleScript = $"do shell script \"{appleScriptInner}\" with administrator privileges";
 
             var psi = new ProcessStartInfo
             {
@@ -1078,13 +1077,32 @@ public partial class MainViewModel : ObservableObject
                 CreateNoWindow = true
             };
             using var proc = Process.Start(psi);
-            if (proc != null)
+            if (proc == null)
             {
-                // Optionally wait a short time to see if launch failed.
-                await Task.Delay(1500);
-                // Exit current (non-elevated) instance so only one UI remains.
-                Environment.Exit(0);
+                ErrorMessage = "Elevation failed: could not start osascript.";
+                ShowElevationOffer = true;
+                return;
             }
+
+            // Read output & error while process runs, then evaluate result.
+            //string stderr = await proc.StandardError.ReadToEndAsync();
+            // string stdout = await proc.StandardOutput.ReadToEndAsync();
+            // Wait (with reasonable timeout) for AppleScript to finish prompting.
+            proc.WaitForExit(1500);
+            if (proc.HasExited)
+            {
+                var code = proc.ExitCode;
+                if (code != 0)
+                {
+                    ErrorMessage = $"Elevation script error (code {code})";
+                    ShowElevationOffer = true; // keep offer visible
+                    return;
+                }
+            }
+
+            await Task.Delay(1500);
+            // Exit current (non-elevated) instance so only one UI remains.
+            Environment.Exit(0);
         }
         catch (Exception ex)
         {
