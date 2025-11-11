@@ -53,7 +53,9 @@
           BorderThickness="0"
           Tag="{x:Bind InfoTag, Mode=OneWay}"
           ToolTipService.ToolTip="{x:Bind InfoToolTip, Mode=OneWay}"
-          Visibility="{x:Bind InternalInfoVisibility, Mode=OneWay}">
+          Visibility="{x:Bind InternalInfoVisibility, Mode=OneWay}"
+          Command="{x:Bind BadgeCommand, Mode=OneWay}"
+          CommandParameter="{x:Bind BadgeCommandParameter, Mode=OneWay}">
           <TextBlock
             HorizontalAlignment="Center"
             VerticalAlignment="Center"

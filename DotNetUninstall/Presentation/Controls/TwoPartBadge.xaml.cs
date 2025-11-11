@@ -3,6 +3,9 @@ using Microsoft.UI.Xaml.Controls;
 using Microsoft.UI.Xaml.Controls.Primitives;
 using Microsoft.UI.Xaml.Data;
 using Microsoft.UI.Xaml.Media;
+using CommunityToolkit.Mvvm.Input;
+using System.Threading.Tasks;
+using Windows.System;
 
 namespace DotNetUninstall.Presentation.Controls;
 
@@ -11,15 +14,38 @@ public sealed partial class TwoPartBadge : UserControl
     public TwoPartBadge()
     {
         InitializeComponent();
-        // Default content for value if plain text provided via Value property
         Loaded += (_, _) => EnsureValueContent();
+        // If consumer didn't supply a BadgeCommand, provide a sensible default that opens InfoTag (if it's a URL)
+        if (BadgeCommand is null)
+        {
+            // IAsyncRelayCommand implements ICommand
+            BadgeCommand = new AsyncRelayCommand<object?>(async p => await DefaultBadgeActionAsync(p));
+            // Default parameter follows InfoTag
+            BadgeCommandParameter = InfoTag;
+        }
+    }
+
+    private async Task DefaultBadgeActionAsync(object? parameter)
+    {
+        string? url = null;
+        if (parameter is string s) url = s;
+        else if (InfoTag is string it) url = it;
+        if (string.IsNullOrWhiteSpace(url)) return;
+        if (!Uri.TryCreate(url, UriKind.Absolute, out var uri)) return;
+        try
+        {
+            await Launcher.LaunchUriAsync(uri);
+        }
+        catch
+        {
+            // swallow – UI surface will show nothing for now
+        }
     }
 
     private void EnsureValueContent()
     {
         if (ValueContent is null && !string.IsNullOrEmpty(Value))
         {
-            // Provide a TextBlock inside a horizontal stack so callers can optionally inject a button etc. later via ValueContent
             ValueContent = new TextBlock
             {
                 Text = Value,
@@ -50,7 +76,6 @@ public sealed partial class TwoPartBadge : UserControl
     {
         if (d is TwoPartBadge badge)
         {
-            // Reset value content if simple value used
             if (badge.ValueContent is null && e.NewValue is string s && !string.IsNullOrEmpty(s))
             {
                 badge.ValueContent = new TextBlock
@@ -62,6 +87,24 @@ public sealed partial class TwoPartBadge : UserControl
             }
         }
     }
+    #endregion
+
+    #region BadgeCommand (MVVM ICommand support)
+    public System.Windows.Input.ICommand? BadgeCommand
+    {
+        get => (System.Windows.Input.ICommand?)GetValue(BadgeCommandProperty);
+        set => SetValue(BadgeCommandProperty, value);
+    }
+    public static readonly DependencyProperty BadgeCommandProperty =
+        DependencyProperty.Register(nameof(BadgeCommand), typeof(System.Windows.Input.ICommand), typeof(TwoPartBadge), new PropertyMetadata(null));
+
+    public object? BadgeCommandParameter
+    {
+        get => GetValue(BadgeCommandParameterProperty);
+        set => SetValue(BadgeCommandParameterProperty, value);
+    }
+    public static readonly DependencyProperty BadgeCommandParameterProperty =
+        DependencyProperty.Register(nameof(BadgeCommandParameter), typeof(object), typeof(TwoPartBadge), new PropertyMetadata(null));
     #endregion
 
     #region Info Button
@@ -119,6 +162,11 @@ public sealed partial class TwoPartBadge : UserControl
         if (d is TwoPartBadge badge)
         {
             badge.UpdateInfoVisibility();
+            // If no command parameter was explicitly supplied, default it to InfoTag
+            if (badge.BadgeCommandParameter is null)
+            {
+                badge.BadgeCommandParameter = badge.InfoTag;
+            }
         }
     }
 
