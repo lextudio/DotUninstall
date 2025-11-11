@@ -1084,11 +1084,8 @@ public partial class MainViewModel : ObservableObject
                 return;
             }
 
-            // Read output & error while process runs, then evaluate result.
-            //string stderr = await proc.StandardError.ReadToEndAsync();
-            // string stdout = await proc.StandardOutput.ReadToEndAsync();
-            // Wait (with reasonable timeout) for AppleScript to finish prompting.
-            proc.WaitForExit(1500);
+            // Wait for AppleScript to finish prompting.
+            proc.WaitForExit();
             if (proc.HasExited)
             {
                 var code = proc.ExitCode;
@@ -1099,10 +1096,6 @@ public partial class MainViewModel : ObservableObject
                     return;
                 }
             }
-
-            await Task.Delay(1500);
-            // Exit current (non-elevated) instance so only one UI remains.
-            Environment.Exit(0);
         }
         catch (Exception ex)
         {
