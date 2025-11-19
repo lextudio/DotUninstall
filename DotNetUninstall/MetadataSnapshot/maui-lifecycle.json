@@ -1,5 +1,5 @@
 {
-  "lastUpdated": "2025-11-15T03:27:20.1664304Z",
+  "lastUpdated": "2025-11-19T00:41:26.3188760Z",
   "source": "https://dotnet.microsoft.com/platform/support/policy/maui",
   "entries": [
     {
@@ -23,8 +23,14 @@
     {
       "channel": "9.0",
       "mauiVersion": ".NET MAUI 9",
-      "latestPatch": "9.0.110",
+      "latestPatch": "9.0.120",
       "eolDate": "2026-05-12"
+    },
+    {
+      "channel": "10.0",
+      "mauiVersion": ".NET MAUI 10",
+      "latestPatch": "10.0.10",
+      "eolDate": "2027-05-11"
     }
   ]
 }

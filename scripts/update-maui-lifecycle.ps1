@@ -25,14 +25,7 @@
      [string[]]$UriCandidates = @(
          # Correct current support policy pages (dotnet.microsoft.com)
          'https://dotnet.microsoft.com/platform/support/policy/maui',
-         'https://dotnet.microsoft.com/en-us/platform/support/policy/maui',
-         # Legacy / learn fallbacks (may 404 but kept for future migrations)
-         'https://learn.microsoft.com/lifecycle/products/microsoft-dotnet-maui',
-         'https://learn.microsoft.com/en-us/lifecycle/products/microsoft-dotnet-maui',
-         'https://learn.microsoft.com/dotnet/maui/support-policy',
-         'https://learn.microsoft.com/en-us/dotnet/maui/support-policy',
-         'https://learn.microsoft.com/dotnet/maui/supported-versions',
-         'https://learn.microsoft.com/en-us/dotnet/maui/supported-versions'
+         'https://dotnet.microsoft.com/en-us/platform/support/policy/maui'
      ),
      [switch]$FailIfEmpty
  )
@@ -73,48 +66,58 @@
  $tableBlocks = @()
  $tableBlocks += ([Regex]::Matches($normalized, '<table[^>]*aria-labelledby="supported-versions".*?</table>', 'IgnoreCase') | ForEach-Object { $_.Value })
  $tableBlocks += ([Regex]::Matches($normalized, '<table[^>]*aria-labelledby="out-of-support-versions".*?</table>', 'IgnoreCase') | ForEach-Object { $_.Value })
- foreach ($tb in $tableBlocks) {
-  $rows = [Regex]::Matches($tb, '<tr[^>]*?>.*?</tr>', 'IgnoreCase') | ForEach-Object { $_.Value }
-   if ($rows.Count -lt 2) { continue }
-   # Skip thead row(s); identify data rows from tbody (simple approach: skip first row containing <th>)
-   foreach ($r in $rows) {
-     if ($r -match '<th') { continue }
-     $cells = [Regex]::Matches($r, '<t[dh][^>]*?>(.*?)</t[dh]>', 'IgnoreCase') | ForEach-Object {
-       $inner = $_.Groups[1].Value
-       $inner = [Regex]::Replace($inner, '<.*?>', '')
-       $inner = [System.Net.WebUtility]::HtmlDecode($inner)
-       $inner.Trim()
-     }
-  # Some minification anomalies may collapse tags; ensure we still have at least 5 cells with td after filtering
-  if (($cells | Where-Object { $_ -ne '' }).Count -lt 5) { continue }
-     $versionText = $cells[0]
-     if ($versionText -match '(?i)preview') { continue }
-     # Expect columns: Version | Original release date | Latest patch version | Patch release date | End of support
-     $latestPatch = $cells[2]
-     $endRaw = $cells[4]
-     $eolIso = $null
-     if (-not [string]::IsNullOrWhiteSpace($endRaw)) {
-      $candidate = $endRaw -replace '^[A-Za-z]+,\s*',''  # strip weekday
-      $parsedEnd = [datetime]::MinValue
-      if ([DateTime]::TryParse($candidate, [System.Globalization.CultureInfo]::InvariantCulture, [System.Globalization.DateTimeStyles]::AllowWhiteSpaces, [ref]$parsedEnd)) {
-        $eolIso = $parsedEnd.ToUniversalTime().ToString('yyyy-MM-dd')
-      }
-     }
-     $channel = $null
-  if ($versionText -match '(\d+\.\d+)') { $channel = $Matches[1] }
-  elseif ($versionText -match '(\d+)') { $channel = "$($Matches[1]).0" }
-     if (-not $channel) { continue }
-    # Debug: uncomment for troubleshooting
-    # Write-Host "Row => version='$versionText' channel='$channel' patch='$latestPatch' eol='$eolIso'" -ForegroundColor DarkGray
-     $entries += [pscustomobject]@{
-       channel     = $channel
-       mauiVersion = $versionText
-       latestPatch = $latestPatch
-       eolDate     = $eolIso
-     }
-   }
- }
- if ($entries.Count -eq 0) { Write-Warning 'No data rows parsed from policy page tables.' }
+foreach ($tb in $tableBlocks) {
+    $rowSources = @()
+    $tbodyMatches = [Regex]::Matches($tb, '<tbody[^>]*?>(.*?)</tbody>', 'IgnoreCase')
+    if ($tbodyMatches.Count -gt 0) {
+        $rowSources = $tbodyMatches | ForEach-Object { $_.Groups[1].Value }
+    } else {
+        # Fallback to entire table HTML if tbody tags disappear again
+        $rowSources = @($tb)
+    }
+    foreach ($chunk in $rowSources) {
+        $rows = [Regex]::Matches($chunk, '<tr[^>]*?>.*?</tr>', 'IgnoreCase') | ForEach-Object { $_.Value }
+        if ($rows.Count -eq 0) { continue }
+        # Skip thead row(s); identify data rows from tbody (simple approach: skip first row containing <th>)
+        foreach ($r in $rows) {
+            if ($r -match '<th') { continue }
+            $cells = [Regex]::Matches($r, '<t[dh][^>]*?>(.*?)</t[dh]>', 'IgnoreCase') | ForEach-Object {
+                $inner = $_.Groups[1].Value
+                $inner = [Regex]::Replace($inner, '<.*?>', '')
+                $inner = [System.Net.WebUtility]::HtmlDecode($inner)
+                $inner.Trim()
+            }
+            # Some minification anomalies may collapse tags; ensure we still have at least 5 cells with td after filtering
+            if (($cells | Where-Object { $_ -ne '' }).Count -lt 5) { continue }
+            $versionText = $cells[0]
+            if ($versionText -match '(?i)preview') { continue }
+            # Expect columns: Version | Original release date | Latest patch version | Patch release date | End of support
+            $latestPatch = $cells[2]
+            $endRaw = $cells[4]
+            $eolIso = $null
+            if (-not [string]::IsNullOrWhiteSpace($endRaw)) {
+                $candidate = $endRaw -replace '^[A-Za-z]+,\s*',''  # strip weekday
+                $parsedEnd = [datetime]::MinValue
+                if ([DateTime]::TryParse($candidate, [System.Globalization.CultureInfo]::InvariantCulture, [System.Globalization.DateTimeStyles]::AllowWhiteSpaces, [ref]$parsedEnd)) {
+                    $eolIso = $parsedEnd.ToUniversalTime().ToString('yyyy-MM-dd')
+                }
+            }
+            $channel = $null
+            if ($versionText -match '(\d+\.\d+)') { $channel = $Matches[1] }
+            elseif ($versionText -match '(\d+)') { $channel = "$($Matches[1]).0" }
+            if (-not $channel) { continue }
+            # Debug: uncomment for troubleshooting
+            # Write-Host "Row => version='$versionText' channel='$channel' patch='$latestPatch' eol='$eolIso'" -ForegroundColor DarkGray
+            $entries += [pscustomobject]@{
+                channel     = $channel
+                mauiVersion = $versionText
+                latestPatch = $latestPatch
+                eolDate     = $eolIso
+            }
+        }
+    }
+}
+if ($entries.Count -eq 0) { Write-Warning 'No data rows parsed from policy page tables.' }
 
 # Fallback extraction: direct row pattern scan for '.NET MAUI X' sequences if we have fewer than 3 entries
 if ($entries.Count -lt 3 -and $normalized) {
@@ -158,7 +161,8 @@ $result = [pscustomobject]@{
     source      = $usedUrl
     entries     = [System.Collections.Generic.List[object]]::new()
 }
-foreach ($v in ($dedup.Keys | Sort-Object)) {
+$orderedChannels = $dedup.Keys | Sort-Object { [version]$_ }
+foreach ($v in $orderedChannels) {
     $result.entries.Add($dedup[$v])
 }
 
