@@ -74,6 +74,8 @@ $AppBundles = @()
 foreach ($rid in $Rids) {
   Step "Publishing $rid"
   $ridOut = Join-Path $OutRoot $rid
+  Step "Restoring runtime pack for $rid"
+  dotnet restore $Project -r $rid | Out-Null
   dotnet publish $Project -c $Configuration -r $rid -p:PackageFormat=app -o $ridOut | Out-Null
   $app = Get-ChildItem $ridOut -Directory -Filter '*.app' -Recurse | Select-Object -First 1
   if (-not $app) { throw "No .app bundle found for $rid (check Uno macOS target configuration)." }
