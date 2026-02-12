@@ -1234,7 +1234,9 @@ public partial class MainViewModel : ObservableObject
             var shellCmd = $"\"{EscapeForShell(launchTarget)}\"{argsPart}";
             // AppleScript string literal needs backslashes and quotes escaped again
             var appleScriptInner = shellCmd.Replace("\\", "\\\\").Replace("\"", "\\\"");
-            var appleScript = $"do shell script \"{appleScriptInner}\" with administrator privileges";
+            var elevationPrompt = "DotUninstall needs administrator privileges to relaunch and perform uninstall operations.";
+            var promptEscaped = elevationPrompt.Replace("\\", "\\\\").Replace("\"", "\\\"");
+            var appleScript = $"do shell script \"{appleScriptInner}\" with administrator privileges with prompt \"{promptEscaped}\"";
 
             var psi = new ProcessStartInfo
             {
