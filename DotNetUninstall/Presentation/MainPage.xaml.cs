@@ -28,6 +28,7 @@ public sealed partial class MainPage : Page
         if (_vm != null)
         {
             _vm.PropertyChanged += VmOnPropertyChanged;
+            ApplyRequestedTheme();
             if (_vm.RefreshCommand.CanExecute(null))
             {
                 _ = _vm.RefreshCommand.ExecuteAsync(null);
@@ -41,6 +42,28 @@ public sealed partial class MainPage : Page
         if (e.PropertyName == nameof(MainViewModel.IsElevated) || e.PropertyName == nameof(MainViewModel.ShowElevationOffer))
         {
             UpdateUninstallButtons();
+        }
+
+        if (e.PropertyName == nameof(MainViewModel.RequestedElementTheme))
+        {
+            ApplyRequestedTheme();
+        }
+    }
+
+    private void ApplyRequestedTheme()
+    {
+        if (_vm == null)
+        {
+            return;
+        }
+
+        var requestedTheme = _vm.RequestedElementTheme;
+        RequestedTheme = requestedTheme;
+
+        // Apply at window root too so Shell-level visuals refresh immediately.
+        if (DotNetUninstall.App.CurrentMainWindow?.Content is FrameworkElement root && !ReferenceEquals(root, this))
+        {
+            root.RequestedTheme = requestedTheme;
         }
     }
 

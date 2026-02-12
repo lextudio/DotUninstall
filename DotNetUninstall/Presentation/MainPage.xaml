@@ -6,7 +6,8 @@
   xmlns:conv="using:DotNetUninstall.Presentation.Converters"
   xmlns:sys="using:System"
   x:Name="RootPage"
-  Background="{ThemeResource ApplicationPageBackgroundThemeBrush}">
+  Background="{ThemeResource ApplicationPageBackgroundThemeBrush}"
+  RequestedTheme="{Binding RequestedElementTheme}">
   <Page.Resources>
     <conv:NullToVisibilityConverter x:Key="NullToVisibilityConverter" />
     <conv:BoolToVisibilityConverter x:Key="BoolToVisibilityConverter" />
@@ -15,6 +16,18 @@
     <conv:LifecycleStateToBrushConverter x:Key="LifecycleStateToBrushConverter" />
     <conv:ChannelDisplayConverter x:Key="ChannelDisplayConverter" />
     <conv:SecurityStateYesNoConverter x:Key="SecurityStateYesNoConverter" />
+    <Style x:Key="BannerActionButtonStyle" TargetType="Button">
+      <Setter Property="BorderThickness" Value="1" />
+      <Setter Property="CornerRadius" Value="6" />
+      <Setter Property="Foreground" Value="{ThemeResource Brush.Banner.Action.Primary.Foreground}" />
+      <Setter Property="Background" Value="{ThemeResource Brush.Banner.Action.Primary.Background}" />
+      <Setter Property="BorderBrush" Value="{ThemeResource Brush.Banner.Action.Primary.Border}" />
+    </Style>
+    <Style x:Key="BannerSecondaryActionButtonStyle" TargetType="Button" BasedOn="{StaticResource BannerActionButtonStyle}">
+      <Setter Property="Foreground" Value="{ThemeResource Brush.Banner.Action.Secondary.Foreground}" />
+      <Setter Property="Background" Value="{ThemeResource Brush.Banner.Action.Secondary.Background}" />
+      <Setter Property="BorderBrush" Value="{ThemeResource Brush.Banner.Action.Secondary.Border}" />
+    </Style>
     <DataTemplate x:Key="HeaderTemplate">
       <StackPanel
         Margin="8,0,8,12"
@@ -53,54 +66,54 @@
               Spacing="8">
               <!--  Release Type (e.g., LTS | 8)  -->
               <controls:TwoPartBadge
-                InfoGlyphForeground="{StaticResource Badge.Release.Label}"
+                InfoGlyphForeground="{ThemeResource Badge.Release.Label}"
                 InfoTag="{Binding ReleaseTypeInfoUrl}"
                 InfoToolTip="Learn more"
                 Label="Type"
-                LabelBackground="{StaticResource Badge.Release.Label}"
-                ValueBackground="{StaticResource Badge.Release.Value}"
+                LabelBackground="{ThemeResource Badge.Release.Label}"
+                ValueBackground="{ThemeResource Badge.Release.Value}"
                 Visibility="{Binding ReleaseType, Converter={StaticResource NullToVisibilityConverter}}"
                 Value="{Binding ReleaseType}" />
               <!--  Support Phase (Phase | value)  -->
               <controls:TwoPartBadge
-                InfoGlyphForeground="{StaticResource Badge.Support.Value}"
+                InfoGlyphForeground="{ThemeResource Badge.Support.Value}"
                 InfoTag="{Binding SupportPhaseInfoUrl}"
                 InfoToolTip="Learn more"
                 Label="Support"
-                LabelBackground="{StaticResource Badge.Support.Label}"
-                ValueBackground="{StaticResource Badge.Support.Value}"
+                LabelBackground="{ThemeResource Badge.Support.Label}"
+                ValueBackground="{ThemeResource Badge.Support.Value}"
                 Visibility="{Binding SupportPhase, Converter={StaticResource NullToVisibilityConverter}}"
                 Value="{Binding SupportPhase}" />
               <!--  EOL badge (EOL | date)  -->
               <controls:TwoPartBadge
-                InfoGlyphForeground="{StaticResource Badge.Eol.Value}"
+                InfoGlyphForeground="{ThemeResource Badge.Eol.Value}"
                 InfoTag="{Binding EolInfoUrl}"
                 InfoToolTip="Learn more"
                 Label="EOL"
-                LabelBackground="{StaticResource Badge.Eol.Label}"
+                LabelBackground="{ThemeResource Badge.Eol.Label}"
                 ToolTipService.ToolTip="{Binding EolDisplay}"
-                ValueBackground="{StaticResource Badge.Eol.Value}"
+                ValueBackground="{ThemeResource Badge.Eol.Value}"
                 Visibility="{Binding EolDateValue, Converter={StaticResource NullToVisibilityConverter}}"
                 Value="{Binding EolDateValue}" />
               <!--  MAUI EOL badge (MAUI EOL | date)  -->
               <controls:TwoPartBadge
-                InfoGlyphForeground="{StaticResource Badge.MauiEol.Value}"
+                InfoGlyphForeground="{ThemeResource Badge.MauiEol.Value}"
                 InfoTag="{Binding MauiEolInfoUrl}"
                 InfoToolTip="Learn more"
                 Label="MAUI EOL"
-                LabelBackground="{StaticResource Badge.MauiEol.Label}"
+                LabelBackground="{ThemeResource Badge.MauiEol.Label}"
                 ToolTipService.ToolTip="MAUI End of life"
-                ValueBackground="{StaticResource Badge.MauiEol.Value}"
+                ValueBackground="{ThemeResource Badge.MauiEol.Value}"
                 Visibility="{Binding MauiEolDateValue, Converter={StaticResource NullToVisibilityConverter}}"
                 Value="{Binding MauiEolDateValue}" />
               <!--  Latest missing (normal)  -->
               <controls:TwoPartBadge
-                InfoGlyphForeground="{StaticResource Badge.Latest.Value}"
+                InfoGlyphForeground="{ThemeResource Badge.Latest.Value}"
                 InfoTag="{Binding ChannelDownloadUrl}"
                 InfoToolTip="Download"
                 Label="Latest"
-                LabelBackground="{StaticResource Badge.Latest.Label}"
-                ValueBackground="{StaticResource Badge.Latest.Value}"
+                LabelBackground="{ThemeResource Badge.Latest.Label}"
+                ValueBackground="{ThemeResource Badge.Latest.Value}"
                 Visibility="{Binding ShowLatestRelevantMissingNormal, Converter={StaticResource BoolToVisibilityConverter}}"
                 Value="{Binding LatestRelevantVersion}" />
               <!--  Latest missing (security)  -->
@@ -154,55 +167,55 @@
             Spacing="6">
             <!--  Release Date badge: Release|yyyy-MM-dd with notes link  -->
             <controls:TwoPartBadge
-              InfoGlyphForeground="{StaticResource Badge.ReleaseDate.Label}"
+              InfoGlyphForeground="{ThemeResource Badge.ReleaseDate.Label}"
               InfoTag="{Binding ReleaseNotesUrl}"
               InfoToolTip="Open release notes"
               Label="Release"
-              LabelBackground="{StaticResource Badge.ReleaseDate.Label}"
+              LabelBackground="{ThemeResource Badge.ReleaseDate.Label}"
               ToolTipService.ToolTip="View release notes"
-              ValueBackground="{StaticResource Badge.ReleaseDate.Value}"
+              ValueBackground="{ThemeResource Badge.ReleaseDate.Value}"
               Visibility="{Binding ReleaseDate, Converter={StaticResource NullToVisibilityConverter}}"
               Value="{Binding ReleaseDateValue}" />
             <!--  Stage badge: Stage|GA or Stage|Preview N / Stage|RC N  -->
             <controls:TwoPartBadge
               Label="Stage"
-              LabelBackground="{StaticResource Badge.Stage.Label}"
+              LabelBackground="{ThemeResource Badge.Stage.Label}"
               ToolTipService.ToolTip="Release stage"
-              ValueBackground="{StaticResource Badge.Stage.Value}"
+              ValueBackground="{ThemeResource Badge.Stage.Value}"
               Visibility="{Binding StageDisplay, Converter={StaticResource NullToVisibilityConverter}}"
               Value="{Binding StageDisplay}" />
             <!--  Simplified secure status badge: Secure|Yes or Secure|No  -->
             <controls:TwoPartBadge
               Label="Secure"
-              LabelBackground="{StaticResource Badge.Security.Label}"
+              LabelBackground="{ThemeResource Badge.Security.Label}"
               ToolTipService.ToolTip="{Binding SecurityTooltip}"
               Visibility="{Binding ElementName=RootPage, Path=DataContext.IsMetadataEnabledInSession, Converter={StaticResource BoolToVisibilityConverter}}"
-              ValueBackground="{StaticResource Badge.Security.Value}"
+              ValueBackground="{ThemeResource Badge.Security.Value}"
               Value="{Binding SecurityStatus, Converter={StaticResource SecurityStateYesNoConverter}}" />
             <!--  Out of support badge  -->
             <controls:TwoPartBadge
               Label="EOL"
-              LabelBackground="{StaticResource Badge.Eol.Label}"
+              LabelBackground="{ThemeResource Badge.Eol.Label}"
               ToolTipService.ToolTip="Out of support"
-              ValueBackground="{StaticResource Badge.Eol.Value}"
+              ValueBackground="{ThemeResource Badge.Eol.Value}"
               Visibility="{Binding IsOutOfSupport, Converter={StaticResource BoolToVisibilityConverter}}"
               Value="Build" />
             <!--  Architecture badge  -->
             <controls:TwoPartBadge
               Label="Arch"
-              LabelBackground="{StaticResource Badge.Arch.Label}"
-              ValueBackground="{StaticResource Badge.Arch.Value}"
+              LabelBackground="{ThemeResource Badge.Arch.Label}"
+              ValueBackground="{ThemeResource Badge.Arch.Value}"
               Value="{Binding Architecture}" />
             <!--  SubType badge  -->
             <controls:TwoPartBadge
               BadgeFontSize="11"
               Label="Type"
-              LabelBackground="{StaticResource Badge.SubType.Label}"
-              ValueBackground="{StaticResource Badge.SubType.Value}"
+              LabelBackground="{ThemeResource Badge.SubType.Label}"
+              ValueBackground="{ThemeResource Badge.SubType.Value}"
               Visibility="{Binding SubType, Converter={StaticResource NullToVisibilityConverter}}"
               Value="{Binding SubType}" />
             <!--  Reason badge (single segment)  -->
-            <controls:SingleBadge Background="{StaticResource Badge.Reason.Background}" Visibility="{Binding Reason, Converter={StaticResource NullToVisibilityConverter}}">
+            <controls:SingleBadge Background="{ThemeResource Badge.Reason.Background}" Visibility="{Binding Reason, Converter={StaticResource NullToVisibilityConverter}}">
               <TextBlock
                 MaxWidth="260"
                 VerticalAlignment="Center"
@@ -214,8 +227,8 @@
             <!--  Removable badge  -->
             <controls:TwoPartBadge
               Label="State"
-              LabelBackground="{StaticResource Badge.State.Label}"
-              ValueBackground="{StaticResource Badge.State.Value}"
+              LabelBackground="{ThemeResource Badge.State.Label}"
+              ValueBackground="{ThemeResource Badge.State.Value}"
               Visibility="{Binding CanUninstall, Converter={StaticResource BoolToVisibilityConverter}}"
               Value="Removable" />
           </StackPanel>
@@ -240,8 +253,8 @@
       <Border
         Margin="8,8,8,0"
         Padding="8"
-        Background="{StaticResource Brush.Banner.Snapshot.Background}"
-        BorderBrush="{StaticResource Brush.Banner.Snapshot.Border}"
+        Background="{ThemeResource Brush.Banner.Snapshot.Background}"
+        BorderBrush="{ThemeResource Brush.Banner.Snapshot.Border}"
         BorderThickness="1"
         CornerRadius="6"
         Visibility="{Binding IsUsingSnapshot, Converter={StaticResource BoolToVisibilityConverter}}">
@@ -251,15 +264,15 @@
           Spacing="8">
           <TextBlock
             FontSize="12"
-            Foreground="{StaticResource Brush.Banner.Snapshot.Foreground}"
+            Foreground="{ThemeResource Brush.Banner.Snapshot.Foreground}"
             Text="Using embedded metadata snapshot (offline)." />
         </StackPanel>
       </Border>
       <Border
         Margin="8,0,8,0"
         Padding="8"
-        Background="{StaticResource Brush.Banner.Cached.Background}"
-        BorderBrush="{StaticResource Brush.Banner.Cached.Border}"
+        Background="{ThemeResource Brush.Banner.Cached.Background}"
+        BorderBrush="{ThemeResource Brush.Banner.Cached.Border}"
         BorderThickness="1"
         CornerRadius="6"
         Visibility="{Binding IsUsingCachedLive, Converter={StaticResource BoolToVisibilityConverter}}">
@@ -269,7 +282,7 @@
           Spacing="8">
           <TextBlock
             FontSize="12"
-            Foreground="{StaticResource Brush.Banner.Cached.Foreground}"
+            Foreground="{ThemeResource Brush.Banner.Cached.Foreground}"
             Text="On cached live metadata." />
         </StackPanel>
       </Border>
@@ -277,8 +290,8 @@
       <Border
         Margin="8,0,8,0"
         Padding="12"
-        Background="{StaticResource Brush.Banner.Update.Background}"
-        BorderBrush="{StaticResource Brush.Banner.Update.Border}"
+        Background="{ThemeResource Brush.Banner.Update.Background}"
+        BorderBrush="{ThemeResource Brush.Banner.Update.Border}"
         BorderThickness="1"
         CornerRadius="6"
         Visibility="{Binding HasUpdate, Converter={StaticResource BoolToVisibilityConverter}}">
@@ -289,7 +302,7 @@
           <TextBlock
             MaxWidth="640"
             FontSize="12"
-            Foreground="{StaticResource Brush.Banner.Update.Foreground}"
+            Foreground="{ThemeResource Brush.Banner.Update.Foreground}"
             TextWrapping="WrapWholeWords">
             <Run Text="Update available: " />
             <Run Text="{Binding UpdateMessage}" />
@@ -297,6 +310,7 @@
           <Button
             Padding="8,4"
             Click="OnOpenReleasePage"
+            Style="{StaticResource BannerActionButtonStyle}"
             Content="Open Release Page" />
         </StackPanel>
       </Border>
@@ -304,8 +318,8 @@
       <Border
         Margin="8,0,8,0"
         Padding="12"
-        Background="{StaticResource Brush.Banner.Elevation.Background}"
-        BorderBrush="{StaticResource Brush.Banner.Elevation.Border}"
+        Background="{ThemeResource Brush.Banner.Elevation.Background}"
+        BorderBrush="{ThemeResource Brush.Banner.Elevation.Border}"
         BorderThickness="1"
         CornerRadius="6"
         Visibility="{Binding ShowElevationWarning, Converter={StaticResource BoolToVisibilityConverter}}">
@@ -316,7 +330,7 @@
           <TextBlock
             MaxWidth="640"
             FontSize="12"
-            Foreground="{StaticResource Brush.Banner.Elevation.Foreground}"
+            Foreground="{ThemeResource Brush.Banner.Elevation.Foreground}"
             TextWrapping="WrapWholeWords">
             <Run Text="Running with elevated privileges (root). " />
             <Run Text="Original user: " />
@@ -326,6 +340,7 @@
           <Button
             Padding="8,4"
             VerticalAlignment="Center"
+            Style="{StaticResource BannerSecondaryActionButtonStyle}"
             Command="{Binding DismissElevationWarningCommand}"
             Content="Dismiss" />
         </StackPanel>
@@ -334,8 +349,8 @@
       <Border
         Margin="8,0,8,0"
         Padding="12"
-        Background="{StaticResource Brush.Banner.NonElevated.Background}"
-        BorderBrush="{StaticResource Brush.Banner.NonElevated.Border}"
+        Background="{ThemeResource Brush.Banner.NonElevated.Background}"
+        BorderBrush="{ThemeResource Brush.Banner.NonElevated.Border}"
         BorderThickness="1"
         CornerRadius="6"
         Visibility="{Binding ShowElevationOffer, Converter={StaticResource BoolToVisibilityConverter}}">
@@ -346,7 +361,7 @@
           <TextBlock
             MaxWidth="640"
             FontSize="12"
-            Foreground="{StaticResource Brush.Banner.NonElevated.Foreground}"
+            Foreground="{ThemeResource Brush.Banner.NonElevated.Foreground}"
             TextWrapping="WrapWholeWords">
             <Run Text="Some uninstall operations may require administrator rights. " />
             <Run Text="You can relaunch this app with elevated privileges." />
@@ -357,10 +372,12 @@
             Spacing="8">
             <Button
               Padding="10,4"
+              Style="{StaticResource BannerActionButtonStyle}"
               Command="{Binding ElevateCommand}"
               Content="Relaunch as Administrator" />
             <Button
               Padding="8,4"
+              Style="{StaticResource BannerSecondaryActionButtonStyle}"
               Command="{Binding DismissElevationOfferCommand}"
               Content="Dismiss" />
           </StackPanel>
@@ -409,13 +426,24 @@
               IsOn="{Binding ShowDotNetMetadata, Mode=TwoWay}"
               OffContent="Off (dotnet-core-uninstall parity)"
               OnContent="On (show metadata-based details)" />
+            <StackPanel Spacing="6">
+              <TextBlock FontWeight="SemiBold" Text="Theme" />
+              <ComboBox
+                Width="180"
+                ItemsSource="{Binding ThemeModes}"
+                SelectedItem="{Binding ThemeMode, Mode=TwoWay}" />
+              <TextBlock
+                FontSize="12"
+                Opacity="0.6"
+                Text="Theme changes apply immediately." />
+            </StackPanel>
             <TextBlock
               FontSize="12"
               Opacity="0.6"
               Text="Changes to this setting take effect after restarting the app." />
             <TextBlock
               FontSize="12"
-              Foreground="{StaticResource Brush.Banner.Update.Foreground}"
+              Foreground="{ThemeResource Brush.Banner.Update.Foreground}"
               Text="Restart required to apply metadata mode changes."
               Visibility="{Binding MetadataSettingChangedRequiresRestart, Converter={StaticResource BoolToVisibilityConverter}}" />
             <Button

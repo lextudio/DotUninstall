@@ -36,25 +36,117 @@
     <SolidColorBrush x:Key="Brush.Lifecycle.Preview" Color="{StaticResource Color.Lifecycle.Preview}" />
 
     <!--  Banner colors (background/border/foreground)  -->
-    <SolidColorBrush x:Key="Brush.Banner.Snapshot.Background" Color="#FFF2F2F2" />
-    <SolidColorBrush x:Key="Brush.Banner.Snapshot.Border" Color="#FFCCCCCC" />
-    <SolidColorBrush x:Key="Brush.Banner.Snapshot.Foreground" Color="#FF444444" />
+    <ResourceDictionary.ThemeDictionaries>
+        <ResourceDictionary x:Key="Default">
+            <SolidColorBrush x:Key="Brush.Banner.Snapshot.Background" Color="#FFF2F2F2" />
+            <SolidColorBrush x:Key="Brush.Banner.Snapshot.Border" Color="#FFCCCCCC" />
+            <SolidColorBrush x:Key="Brush.Banner.Snapshot.Foreground" Color="#FF444444" />
 
-    <SolidColorBrush x:Key="Brush.Banner.Cached.Background" Color="#FFEEF7FF" />
-    <SolidColorBrush x:Key="Brush.Banner.Cached.Border" Color="#FFB3DAF7" />
-    <SolidColorBrush x:Key="Brush.Banner.Cached.Foreground" Color="#FF0A466E" />
+            <SolidColorBrush x:Key="Brush.Banner.Cached.Background" Color="#FFEEF7FF" />
+            <SolidColorBrush x:Key="Brush.Banner.Cached.Border" Color="#FFB3DAF7" />
+            <SolidColorBrush x:Key="Brush.Banner.Cached.Foreground" Color="#FF0A466E" />
 
-    <SolidColorBrush x:Key="Brush.Banner.Update.Background" Color="#FFD1F0D1" />
-    <SolidColorBrush x:Key="Brush.Banner.Update.Border" Color="#FF7BC47B" />
-    <SolidColorBrush x:Key="Brush.Banner.Update.Foreground" Color="#FF0B3D0B" />
+            <SolidColorBrush x:Key="Brush.Banner.Update.Background" Color="#FFD1F0D1" />
+            <SolidColorBrush x:Key="Brush.Banner.Update.Border" Color="#FF7BC47B" />
+            <SolidColorBrush x:Key="Brush.Banner.Update.Foreground" Color="#FF0B3D0B" />
 
-    <SolidColorBrush x:Key="Brush.Banner.Elevation.Background" Color="#FFFFF3CD" />
-    <SolidColorBrush x:Key="Brush.Banner.Elevation.Border" Color="#FFF8D486" />
-    <SolidColorBrush x:Key="Brush.Banner.Elevation.Foreground" Color="#FF664D03" />
+            <SolidColorBrush x:Key="Brush.Banner.Elevation.Background" Color="#FFFFF3CD" />
+            <SolidColorBrush x:Key="Brush.Banner.Elevation.Border" Color="#FFF8D486" />
+            <SolidColorBrush x:Key="Brush.Banner.Elevation.Foreground" Color="#FF664D03" />
 
-    <SolidColorBrush x:Key="Brush.Banner.NonElevated.Background" Color="#FFE8F4FF" />
-    <SolidColorBrush x:Key="Brush.Banner.NonElevated.Border" Color="#FFB3DAF7" />
-    <SolidColorBrush x:Key="Brush.Banner.NonElevated.Foreground" Color="#FF0A466E" />
+            <SolidColorBrush x:Key="Brush.Banner.NonElevated.Background" Color="#FFE8F4FF" />
+            <SolidColorBrush x:Key="Brush.Banner.NonElevated.Border" Color="#FFB3DAF7" />
+            <SolidColorBrush x:Key="Brush.Banner.NonElevated.Foreground" Color="#FF0A466E" />
+
+            <SolidColorBrush x:Key="Brush.Banner.Action.Primary.Background" Color="#FF0A466E" />
+            <SolidColorBrush x:Key="Brush.Banner.Action.Primary.Border" Color="#FF083A5C" />
+            <SolidColorBrush x:Key="Brush.Banner.Action.Primary.Foreground" Color="#FFFFFFFF" />
+            <SolidColorBrush x:Key="Brush.Banner.Action.Secondary.Background" Color="#00FFFFFF" />
+            <SolidColorBrush x:Key="Brush.Banner.Action.Secondary.Border" Color="#FF0A466E" />
+            <SolidColorBrush x:Key="Brush.Banner.Action.Secondary.Foreground" Color="#FF0A466E" />
+        </ResourceDictionary>
+        <ResourceDictionary x:Key="Light">
+            <SolidColorBrush x:Key="Brush.Banner.Snapshot.Background" Color="#FFF2F2F2" />
+            <SolidColorBrush x:Key="Brush.Banner.Snapshot.Border" Color="#FFCCCCCC" />
+            <SolidColorBrush x:Key="Brush.Banner.Snapshot.Foreground" Color="#FF444444" />
+
+            <SolidColorBrush x:Key="Brush.Banner.Cached.Background" Color="#FFEEF7FF" />
+            <SolidColorBrush x:Key="Brush.Banner.Cached.Border" Color="#FFB3DAF7" />
+            <SolidColorBrush x:Key="Brush.Banner.Cached.Foreground" Color="#FF0A466E" />
+
+            <SolidColorBrush x:Key="Brush.Banner.Update.Background" Color="#FFD1F0D1" />
+            <SolidColorBrush x:Key="Brush.Banner.Update.Border" Color="#FF7BC47B" />
+            <SolidColorBrush x:Key="Brush.Banner.Update.Foreground" Color="#FF0B3D0B" />
+
+            <SolidColorBrush x:Key="Brush.Banner.Elevation.Background" Color="#FFFFF3CD" />
+            <SolidColorBrush x:Key="Brush.Banner.Elevation.Border" Color="#FFF8D486" />
+            <SolidColorBrush x:Key="Brush.Banner.Elevation.Foreground" Color="#FF664D03" />
+
+            <SolidColorBrush x:Key="Brush.Banner.NonElevated.Background" Color="#FFE8F4FF" />
+            <SolidColorBrush x:Key="Brush.Banner.NonElevated.Border" Color="#FFB3DAF7" />
+            <SolidColorBrush x:Key="Brush.Banner.NonElevated.Foreground" Color="#FF0A466E" />
+
+            <SolidColorBrush x:Key="Brush.Banner.Action.Primary.Background" Color="#FF0A466E" />
+            <SolidColorBrush x:Key="Brush.Banner.Action.Primary.Border" Color="#FF083A5C" />
+            <SolidColorBrush x:Key="Brush.Banner.Action.Primary.Foreground" Color="#FFFFFFFF" />
+            <SolidColorBrush x:Key="Brush.Banner.Action.Secondary.Background" Color="#00FFFFFF" />
+            <SolidColorBrush x:Key="Brush.Banner.Action.Secondary.Border" Color="#FF0A466E" />
+            <SolidColorBrush x:Key="Brush.Banner.Action.Secondary.Foreground" Color="#FF0A466E" />
+        </ResourceDictionary>
+        <ResourceDictionary x:Key="Dark">
+            <SolidColorBrush x:Key="Brush.Banner.Snapshot.Background" Color="#FF2A2A2A" />
+            <SolidColorBrush x:Key="Brush.Banner.Snapshot.Border" Color="#FF4A4A4A" />
+            <SolidColorBrush x:Key="Brush.Banner.Snapshot.Foreground" Color="#FFE2E2E2" />
+
+            <SolidColorBrush x:Key="Brush.Banner.Cached.Background" Color="#FF0F2635" />
+            <SolidColorBrush x:Key="Brush.Banner.Cached.Border" Color="#FF2D6F98" />
+            <SolidColorBrush x:Key="Brush.Banner.Cached.Foreground" Color="#FFBFE4FF" />
+
+            <SolidColorBrush x:Key="Brush.Banner.Update.Background" Color="#FF112A1B" />
+            <SolidColorBrush x:Key="Brush.Banner.Update.Border" Color="#FF2E855B" />
+            <SolidColorBrush x:Key="Brush.Banner.Update.Foreground" Color="#FFC7F2D7" />
+
+            <SolidColorBrush x:Key="Brush.Banner.Elevation.Background" Color="#FF392A10" />
+            <SolidColorBrush x:Key="Brush.Banner.Elevation.Border" Color="#FF9A7834" />
+            <SolidColorBrush x:Key="Brush.Banner.Elevation.Foreground" Color="#FFF3DEAF" />
+
+            <SolidColorBrush x:Key="Brush.Banner.NonElevated.Background" Color="#FF102736" />
+            <SolidColorBrush x:Key="Brush.Banner.NonElevated.Border" Color="#FF2E7EAC" />
+            <SolidColorBrush x:Key="Brush.Banner.NonElevated.Foreground" Color="#FFC5E9FF" />
+
+            <SolidColorBrush x:Key="Brush.Banner.Action.Primary.Background" Color="#FF2D79A6" />
+            <SolidColorBrush x:Key="Brush.Banner.Action.Primary.Border" Color="#FF53A8DA" />
+            <SolidColorBrush x:Key="Brush.Banner.Action.Primary.Foreground" Color="#FFFFFFFF" />
+            <SolidColorBrush x:Key="Brush.Banner.Action.Secondary.Background" Color="#331B2F3D" />
+            <SolidColorBrush x:Key="Brush.Banner.Action.Secondary.Border" Color="#FF6EB6E3" />
+            <SolidColorBrush x:Key="Brush.Banner.Action.Secondary.Foreground" Color="#FFCBE9FF" />
+
+            <!-- Badge overrides for dark theme -->
+            <SolidColorBrush x:Key="Badge.Release.Label" Color="#FF1A6E98" />
+            <SolidColorBrush x:Key="Badge.Release.Value" Color="#FF2D96D2" />
+            <SolidColorBrush x:Key="Badge.Support.Label" Color="#FF55616B" />
+            <SolidColorBrush x:Key="Badge.Support.Value" Color="#FF72808C" />
+            <SolidColorBrush x:Key="Badge.Eol.Label" Color="#FF9E3644" />
+            <SolidColorBrush x:Key="Badge.Eol.Value" Color="#FFC85768" />
+            <SolidColorBrush x:Key="Badge.MauiEol.Label" Color="#FF6F4A9A" />
+            <SolidColorBrush x:Key="Badge.MauiEol.Value" Color="#FF8D67BE" />
+            <SolidColorBrush x:Key="Badge.Latest.Label" Color="#FF19805A" />
+            <SolidColorBrush x:Key="Badge.Latest.Value" Color="#FF23A470" />
+            <SolidColorBrush x:Key="Badge.Stage.Label" Color="#FF3F4E62" />
+            <SolidColorBrush x:Key="Badge.Stage.Value" Color="#FF5C6F88" />
+            <SolidColorBrush x:Key="Badge.ReleaseDate.Label" Color="#FF715232" />
+            <SolidColorBrush x:Key="Badge.ReleaseDate.Value" Color="#FF97704A" />
+            <SolidColorBrush x:Key="Badge.Security.Label" Color="#FF8B3341" />
+            <SolidColorBrush x:Key="Badge.Security.Value" Color="#FFBF4A63" />
+            <SolidColorBrush x:Key="Badge.Arch.Label" Color="#FF325167" />
+            <SolidColorBrush x:Key="Badge.Arch.Value" Color="#FF497392" />
+            <SolidColorBrush x:Key="Badge.SubType.Label" Color="#FF444A62" />
+            <SolidColorBrush x:Key="Badge.SubType.Value" Color="#FF61698A" />
+            <SolidColorBrush x:Key="Badge.State.Label" Color="#FF227458" />
+            <SolidColorBrush x:Key="Badge.State.Value" Color="#FF2D9C75" />
+            <SolidColorBrush x:Key="Badge.Reason.Background" Color="#FF5D6874" />
+        </ResourceDictionary>
+    </ResourceDictionary.ThemeDictionaries>
 
     <!-- Badge (migrated from App.xaml) -->
     <!-- Release Type -->

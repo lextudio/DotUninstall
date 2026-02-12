@@ -10,6 +10,7 @@ using CommunityToolkit.Mvvm.Input;
 using DotNetUninstall.Models;
 using Microsoft.Extensions.Localization;
 using Microsoft.Extensions.Options;
+using Microsoft.UI.Xaml;
 using Mono.Unix.Native; // Mono.Posix for elevation detection
 using NuGet.Versioning;
 using Octokit;
@@ -89,6 +90,18 @@ public partial class MainViewModel : ObservableObject
     [ObservableProperty]
     private bool showDotNetMetadata;
 
+    [ObservableProperty]
+    private string themeMode = "System";
+
+    public IReadOnlyList<string> ThemeModes { get; } = ["System", "Light", "Dark"];
+
+    public ElementTheme RequestedElementTheme => ThemeMode switch
+    {
+        "Light" => ElementTheme.Light,
+        "Dark" => ElementTheme.Dark,
+        _ => ElementTheme.Default
+    };
+
     // Effective runtime mode loaded at startup; changes to ShowDotNetMetadata apply on next launch.
     [ObservableProperty]
     private bool isMetadataEnabledInSession;
@@ -116,6 +129,7 @@ public partial class MainViewModel : ObservableObject
         ClearCacheCommand = new AsyncRelayCommand(ClearCacheAsync);
         var uiSettings = LoadUiSettings();
         showDotNetMetadata = uiSettings.ShowDotNetMetadata;
+        themeMode = NormalizeThemeMode(uiSettings.ThemeMode);
         isMetadataEnabledInSession = showDotNetMetadata;
         SdkItems.CollectionChanged += (_, __) =>
         {
@@ -166,6 +180,26 @@ public partial class MainViewModel : ObservableObject
         {
             StatusMessage = "Metadata setting saved. Restart the app to apply this change.";
         }
+    }
+
+    partial void OnThemeModeChanged(string value)
+    {
+        var normalized = NormalizeThemeMode(value);
+        if (!string.Equals(normalized, value, StringComparison.Ordinal))
+        {
+            ThemeMode = normalized;
+            return;
+        }
+
+        PersistUiSettings();
+        OnPropertyChanged(nameof(RequestedElementTheme));
+    }
+
+    private static string NormalizeThemeMode(string? value)
+    {
+        if (string.Equals(value, "Light", StringComparison.OrdinalIgnoreCase)) return "Light";
+        if (string.Equals(value, "Dark", StringComparison.OrdinalIgnoreCase)) return "Dark";
+        return "System";
     }
 
 
@@ -280,6 +314,7 @@ public partial class MainViewModel : ObservableObject
     private sealed class UiSettings
     {
         public bool ShowDotNetMetadata { get; set; }
+        public string ThemeMode { get; set; } = "System";
     }
 
     // Real schema (subset) for releases-index.json
@@ -389,7 +424,11 @@ public partial class MainViewModel : ObservableObject
     {
         try
         {
-            var settings = new UiSettings { ShowDotNetMetadata = ShowDotNetMetadata };
+            var settings = new UiSettings
+            {
+                ShowDotNetMetadata = ShowDotNetMetadata,
+                ThemeMode = ThemeMode
+            };
             var json = JsonSerializer.Serialize(settings, new JsonSerializerOptions(JsonSerializerDefaults.Web));
             var settingsPath = GetUiSettingsPath();
             System.IO.File.WriteAllText(settingsPath, json);
