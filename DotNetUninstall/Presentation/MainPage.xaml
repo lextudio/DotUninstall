@@ -176,6 +176,7 @@
               Label="Secure"
               LabelBackground="{StaticResource Badge.Security.Label}"
               ToolTipService.ToolTip="{Binding SecurityTooltip}"
+              Visibility="{Binding ElementName=RootPage, Path=DataContext.IsMetadataEnabledInSession, Converter={StaticResource BoolToVisibilityConverter}}"
               ValueBackground="{StaticResource Badge.Security.Value}"
               Value="{Binding SecurityStatus, Converter={StaticResource SecurityStateYesNoConverter}}" />
             <!--  Out of support badge  -->
@@ -403,6 +404,20 @@
               <TextBlock FontWeight="SemiBold" Text="Version:" />
               <TextBlock Text="{Binding AppVersion}" />
             </StackPanel>
+            <ToggleSwitch
+              Header="Use .NET metadata extras"
+              IsOn="{Binding ShowDotNetMetadata, Mode=TwoWay}"
+              OffContent="Off (dotnet-core-uninstall parity)"
+              OnContent="On (show metadata-based details)" />
+            <TextBlock
+              FontSize="12"
+              Opacity="0.6"
+              Text="Changes to this setting take effect after restarting the app." />
+            <TextBlock
+              FontSize="12"
+              Foreground="{StaticResource Brush.Banner.Update.Foreground}"
+              Text="Restart required to apply metadata mode changes."
+              Visibility="{Binding MetadataSettingChangedRequiresRestart, Converter={StaticResource BoolToVisibilityConverter}}" />
             <Button
               Padding="12,6"
               Command="{Binding CheckUpdateNowCommand}"

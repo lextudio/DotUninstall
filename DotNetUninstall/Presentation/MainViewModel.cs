@@ -85,6 +85,17 @@ public partial class MainViewModel : ObservableObject
     [ObservableProperty]
     private bool isUsingCachedLive; // True when data served from on-disk cached JSON within TTL
 
+    // User preference: metadata-enriched details are optional and off by default
+    [ObservableProperty]
+    private bool showDotNetMetadata;
+
+    // Effective runtime mode loaded at startup; changes to ShowDotNetMetadata apply on next launch.
+    [ObservableProperty]
+    private bool isMetadataEnabledInSession;
+
+    [ObservableProperty]
+    private bool metadataSettingChangedRequiresRestart;
+
     public IAsyncRelayCommand RefreshCommand { get; }
     public IAsyncRelayCommand<DotnetInstallEntry> UninstallCommand { get; }
     public IAsyncRelayCommand BrowseCommand { get; }
@@ -103,6 +114,9 @@ public partial class MainViewModel : ObservableObject
         BrowseCommand = new AsyncRelayCommand(BrowseAsync);
         CheckUpdateNowCommand = new AsyncRelayCommand(ForceCheckForUpdatesAsync);
         ClearCacheCommand = new AsyncRelayCommand(ClearCacheAsync);
+        var uiSettings = LoadUiSettings();
+        showDotNetMetadata = uiSettings.ShowDotNetMetadata;
+        isMetadataEnabledInSession = showDotNetMetadata;
         SdkItems.CollectionChanged += (_, __) =>
         {
             OnPropertyChanged(nameof(SdkCount));
@@ -144,6 +158,16 @@ public partial class MainViewModel : ObservableObject
         }
     }
 
+    partial void OnShowDotNetMetadataChanged(bool value)
+    {
+        PersistUiSettings();
+        MetadataSettingChangedRequiresRestart = value != IsMetadataEnabledInSession;
+        if (MetadataSettingChangedRequiresRestart)
+        {
+            StatusMessage = "Metadata setting saved. Restart the app to apply this change.";
+        }
+    }
+
 
     private async Task ListFromEmbeddedAsync()
     {
@@ -167,61 +191,73 @@ public partial class MainViewModel : ObservableObject
             return;
         }
 
-        // Prepare metadata before adding to observable collections
-        try
+        if (!IsMetadataEnabledInSession)
         {
-            var neededChannels = new HashSet<string>(parsed.Select(p => DeriveChannel(p.Version)), StringComparer.OrdinalIgnoreCase);
-            if (neededChannels.Count > 0)
-            {
-                await EnsureMetadataAsync(neededChannels);
-            }
+            IsUsingSnapshot = false;
+            IsUsingCachedLive = false;
         }
-        catch (Exception ex)
+
+        // Prepare metadata before adding to observable collections
+        if (IsMetadataEnabledInSession)
         {
-            StatusMessage = (StatusMessage ?? "") + $" (Metadata fetch failed: {ex.Message})";
+            try
+            {
+                var neededChannels = new HashSet<string>(parsed.Select(p => DeriveChannel(p.Version)), StringComparer.OrdinalIgnoreCase);
+                if (neededChannels.Count > 0)
+                {
+                    await EnsureMetadataAsync(neededChannels);
+                }
+            }
+            catch (Exception ex)
+            {
+                StatusMessage = (StatusMessage ?? "") + $" (Metadata fetch failed: {ex.Message})";
+            }
         }
 
         int sdkCount = 0, rtCount = 0;
         foreach (var baseEntry in parsed)
         {
             DotnetInstallEntry finalEntry = baseEntry;
-            try
+            if (IsMetadataEnabledInSession)
             {
-                var channel = DeriveChannel(baseEntry.Version);
-                ChannelResolved? meta = null;
-                if (_channelCache != null)
+                try
                 {
-                    _channelCache.TryGetValue(channel, out meta);
+                    var channel = DeriveChannel(baseEntry.Version);
+                    ChannelResolved? meta = null;
+                    if (_channelCache != null)
+                    {
+                        _channelCache.TryGetValue(channel, out meta);
+                    }
+                    var (previewKind, previewNum) = DerivePreviewInfo(baseEntry.Version);
+                    bool isPreview = previewKind != "ga";
+                    bool outOfSupport = meta != null && (meta.SupportPhase == "eol" || (meta.EolDate.HasValue && meta.EolDate.Value < DateTime.UtcNow.Date));
+                    bool isSecurity = meta != null && ((baseEntry.Type == "sdk" && meta.SecurityVersions.Contains(baseEntry.Version)) || (baseEntry.Type == "runtime" && meta.SecurityVersions.Contains(baseEntry.Version)));
+                    SecurityStatus securityStatus = SecurityStatus.None;
+                    string? securityTooltip = null;
+                    if (meta != null)
+                    {
+                        var latestSec = baseEntry.Type == "sdk" ? meta.LatestSecuritySdk : meta.LatestSecurityRuntime;
+                        (securityStatus, securityTooltip) = DotNetUninstall.Core.SecurityClassificationHelper.Classify(baseEntry.Version, latestSec, isSecurity);
+                    }
+                    finalEntry = baseEntry with
+                    {
+                        Channel = channel,
+                        ReleaseType = meta?.ReleaseType?.ToUpperInvariant(),
+                        SupportPhase = meta?.SupportPhase,
+                        IsOutOfSupport = outOfSupport,
+                        PreviewKind = previewKind,
+                        PreviewNumber = previewNum,
+                        IsPreview = isPreview,
+                        IsSecurityUpdate = isSecurity,
+                        EolDate = meta?.EolDate,
+                        SecurityStatus = securityStatus,
+                        SecurityTooltip = securityTooltip,
+                        ReleaseDate = ResolveReleaseDate(meta, baseEntry.Version),
+                        ReleaseNotesUrl = ResolveReleaseNotes(meta, baseEntry.Version)
+                    };
                 }
-                var (previewKind, previewNum) = DerivePreviewInfo(baseEntry.Version);
-                bool isPreview = previewKind != "ga";
-                bool outOfSupport = meta != null && (meta.SupportPhase == "eol" || (meta.EolDate.HasValue && meta.EolDate.Value < DateTime.UtcNow.Date));
-                bool isSecurity = meta != null && ((baseEntry.Type == "sdk" && meta.SecurityVersions.Contains(baseEntry.Version)) || (baseEntry.Type == "runtime" && meta.SecurityVersions.Contains(baseEntry.Version)));
-                SecurityStatus securityStatus = SecurityStatus.None;
-                string? securityTooltip = null;
-                if (meta != null)
-                {
-                    var latestSec = baseEntry.Type == "sdk" ? meta.LatestSecuritySdk : meta.LatestSecurityRuntime;
-                    (securityStatus, securityTooltip) = DotNetUninstall.Core.SecurityClassificationHelper.Classify(baseEntry.Version, latestSec, isSecurity);
-                }
-                finalEntry = baseEntry with
-                {
-                    Channel = channel,
-                    ReleaseType = meta?.ReleaseType?.ToUpperInvariant(),
-                    SupportPhase = meta?.SupportPhase,
-                    IsOutOfSupport = outOfSupport,
-                    PreviewKind = previewKind,
-                    PreviewNumber = previewNum,
-                    IsPreview = isPreview,
-                    IsSecurityUpdate = isSecurity,
-                    EolDate = meta?.EolDate,
-                    SecurityStatus = securityStatus,
-                    SecurityTooltip = securityTooltip,
-                    ReleaseDate = ResolveReleaseDate(meta, baseEntry.Version),
-                    ReleaseNotesUrl = ResolveReleaseNotes(meta, baseEntry.Version)
-                };
+                catch { }
             }
-            catch { }
 
             if (finalEntry.Type == "sdk")
             {
@@ -238,6 +274,13 @@ public partial class MainViewModel : ObservableObject
     }
 
     private static readonly Uri ReleaseMetadataIndex = new("https://builds.dotnet.microsoft.com/dotnet/release-metadata/releases-index.json");
+    private const string AppDataDirectoryName = "dotnet-uninstall-ui";
+    private const string UiSettingsFileName = "ui-settings.json";
+
+    private sealed class UiSettings
+    {
+        public bool ShowDotNetMetadata { get; set; }
+    }
 
     // Real schema (subset) for releases-index.json
     private sealed class ReleasesIndexRoot
@@ -293,6 +336,67 @@ public partial class MainViewModel : ObservableObject
 
     private static Dictionary<string, DateTime?>? _mauiLifecycle; // channel -> eolDate
     private static bool _mauiLifecycleLoaded;
+
+    private static string GetAppDataRootPath()
+    {
+        try
+        {
+            var baseDir = Environment.GetFolderPath(Environment.SpecialFolder.ApplicationData);
+            if (!string.IsNullOrWhiteSpace(baseDir))
+            {
+                var dir = System.IO.Path.Combine(baseDir, AppDataDirectoryName);
+                System.IO.Directory.CreateDirectory(dir);
+                return dir;
+            }
+        }
+        catch { }
+
+        try
+        {
+            var fallback = System.IO.Path.Combine(System.IO.Path.GetTempPath(), AppDataDirectoryName);
+            System.IO.Directory.CreateDirectory(fallback);
+            return fallback;
+        }
+        catch
+        {
+            return System.IO.Path.GetTempPath();
+        }
+    }
+
+    private static string GetUiSettingsPath() => System.IO.Path.Combine(GetAppDataRootPath(), UiSettingsFileName);
+
+    private static UiSettings LoadUiSettings()
+    {
+        try
+        {
+            var settingsPath = GetUiSettingsPath();
+            if (System.IO.File.Exists(settingsPath))
+            {
+                var json = System.IO.File.ReadAllText(settingsPath);
+                var settings = JsonSerializer.Deserialize<UiSettings>(json, new JsonSerializerOptions(JsonSerializerDefaults.Web));
+                if (settings != null)
+                {
+                    return settings;
+                }
+            }
+        }
+        catch { }
+
+        return new UiSettings();
+    }
+
+    private void PersistUiSettings()
+    {
+        try
+        {
+            var settings = new UiSettings { ShowDotNetMetadata = ShowDotNetMetadata };
+            var json = JsonSerializer.Serialize(settings, new JsonSerializerOptions(JsonSerializerDefaults.Web));
+            var settingsPath = GetUiSettingsPath();
+            System.IO.File.WriteAllText(settingsPath, json);
+        }
+        catch { }
+    }
+
     private static void EnsureMauiLifecycleLoaded()
     {
         if (_mauiLifecycleLoaded) return;
@@ -395,12 +499,8 @@ public partial class MainViewModel : ObservableObject
         string? cacheDir = null;
         try
         {
-            var baseDir = Environment.GetFolderPath(Environment.SpecialFolder.ApplicationData);
-            if (!string.IsNullOrWhiteSpace(baseDir))
-            {
-                cacheDir = System.IO.Path.Combine(baseDir, "dotnet-uninstall-ui", "cache");
-                System.IO.Directory.CreateDirectory(cacheDir);
-            }
+            cacheDir = System.IO.Path.Combine(GetAppDataRootPath(), "cache");
+            System.IO.Directory.CreateDirectory(cacheDir);
         }
         catch { cacheDir = null; }
 
@@ -663,14 +763,10 @@ public partial class MainViewModel : ObservableObject
         if (IsLoading) return;
         try
         {
-            var baseDir = Environment.GetFolderPath(Environment.SpecialFolder.ApplicationData);
-            if (!string.IsNullOrWhiteSpace(baseDir))
+            var cacheDir = System.IO.Path.Combine(GetAppDataRootPath(), "cache");
+            if (System.IO.Directory.Exists(cacheDir))
             {
-                var cacheDir = System.IO.Path.Combine(baseDir, "dotnet-uninstall-ui", "cache");
-                if (System.IO.Directory.Exists(cacheDir))
-                {
-                    System.IO.Directory.Delete(cacheDir, true);
-                }
+                System.IO.Directory.Delete(cacheDir, true);
             }
         }
         catch { /* ignore errors deleting cache */ }
@@ -822,10 +918,16 @@ public partial class MainViewModel : ObservableObject
                 var first = grp.FirstOrDefault();
                 var rt = first?.ReleaseType?.ToUpperInvariant();
                 ChannelResolved? cr = null;
-                _channelCache?.TryGetValue(grp.Key!, out cr);
-                EnsureMauiLifecycleLoaded();
+                if (IsMetadataEnabledInSession)
+                {
+                    _channelCache?.TryGetValue(grp.Key!, out cr);
+                }
                 DateTime? mauiEol = null;
-                if (_mauiLifecycle != null && grp.Key != null && _mauiLifecycle.TryGetValue(grp.Key, out var mdt)) mauiEol = mdt;
+                if (IsMetadataEnabledInSession)
+                {
+                    EnsureMauiLifecycleLoaded();
+                    if (_mauiLifecycle != null && grp.Key != null && _mauiLifecycle.TryGetValue(grp.Key, out var mdt)) mauiEol = mdt;
+                }
                 bool latestRelevantIsSecurity = false;
                 if (cr?.LatestSecuritySdk != null && cr.LatestSdk == cr.LatestSecuritySdk)
                 {
@@ -853,10 +955,16 @@ public partial class MainViewModel : ObservableObject
                 var first = grp.FirstOrDefault();
                 var rt2 = first?.ReleaseType?.ToUpperInvariant();
                 ChannelResolved? cr2 = null;
-                _channelCache?.TryGetValue(grp.Key!, out cr2);
-                EnsureMauiLifecycleLoaded();
+                if (IsMetadataEnabledInSession)
+                {
+                    _channelCache?.TryGetValue(grp.Key!, out cr2);
+                }
                 DateTime? mauiEol2 = null;
-                if (_mauiLifecycle != null && grp.Key != null && _mauiLifecycle.TryGetValue(grp.Key, out var mdt2)) mauiEol2 = mdt2;
+                if (IsMetadataEnabledInSession)
+                {
+                    EnsureMauiLifecycleLoaded();
+                    if (_mauiLifecycle != null && grp.Key != null && _mauiLifecycle.TryGetValue(grp.Key, out var mdt2)) mauiEol2 = mdt2;
+                }
                 bool latestRelevantIsSecurityRt = false;
                 if (cr2?.LatestSecurityRuntime != null && cr2.LatestRuntime == cr2.LatestSecurityRuntime)
                 {
