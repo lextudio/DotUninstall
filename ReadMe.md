@@ -50,19 +50,19 @@ The distributed macOS builds are currently not code signed or notarized. Gatekee
 
 Choose one method to allow it:
 
-1. Right‑click the app bundle (`DotUninstall (arm64).app` or `DotUninstall (x64).app`) and select Open, then Open again in the dialog (Gatekeeper remembers).
+1. Right‑click the app bundle (`DotUninstall.app`) and select Open, then Open again in the dialog (Gatekeeper remembers).
 1. Double‑click (blocked), then open System Settings → Privacy & Security, click Allow Anyway, relaunch and confirm.
 1. Remove the quarantine flag (CLI approach):
 
   ```bash
-  xattr -d com.apple.quarantine "/Applications/DotUninstall (arm64).app"  # adjust path if placed elsewhere
+  xattr -d com.apple.quarantine "/Applications/DotUninstall.app"  # adjust path if placed elsewhere
   ```
 
 1. (Optional) Ad‑hoc sign locally to silence further warnings:
 
   ```bash
-  codesign --force --deep --sign - "/Applications/DotUninstall (arm64).app"
-  spctl --assess --verbose "/Applications/DotUninstall (arm64).app"  # should report 'accepted'
+  codesign --force --deep --sign - "/Applications/DotUninstall.app"
+  spctl --assess --verbose "/Applications/DotUninstall.app"  # should report 'accepted'
   ```
 
 #### Verify Download Integrity (Recommended)

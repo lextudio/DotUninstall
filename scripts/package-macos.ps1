@@ -5,8 +5,9 @@
 
 .DESCRIPTION
   Relies on `dotnet publish -r osx-<arch>` which (for Uno Skia/macOS targets) produces a .app bundle.
-  This script wraps that publish, locates the generated .app, duplicates for each requested RID, and
-  bundles them (optionally) into a DMG without manually crafting Info.plist.
+  This script wraps that publish, locates the generated .app, and when both osx-arm64 + osx-x64 are
+  requested it can merge native binaries into a single universal .app bundle. DMG creation then embeds
+  the universal app by default.
 
 .PARAMETER Rids
   Runtime identifiers to publish. Default: osx-arm64, osx-x64.
@@ -15,7 +16,10 @@
   Build configuration (Default: Release).
 
 .PARAMETER Dmg
-  Switch: also create a DMG containing the produced .app bundles.
+  Switch: also create a DMG containing the produced .app bundle.
+
+.PARAMETER SkipUniversal
+  Disable universal merge (keeps per-RID app bundles).
 
 .EXAMPLE
   ./scripts/package-macos.ps1 -Dmg
@@ -28,6 +32,7 @@ param(
   [string[]]$Rids = @('osx-arm64','osx-x64'),
   [string]$Configuration = 'Release',
   [switch]$Dmg,
+  [switch]$SkipUniversal,
   [string]$IconPath,
   [switch]$VerifyIcon,
   [string]$MacMinVersion = '12.0',      # e.g. 12.0 ; if provided, will rewrite Mach-O LC_BUILD_VERSION minos
@@ -40,6 +45,25 @@ $ErrorActionPreference = 'Stop'
 function Step($m){ Write-Host "[STEP] $m" -ForegroundColor Cyan }
 function Info($m){ Write-Host "[INFO] $m" -ForegroundColor DarkGray }
 function Warn($m){ Write-Host "[WARN] $m" -ForegroundColor Yellow }
+
+function Test-IsMachO([string]$Path) {
+  if (-not (Test-Path $Path)) { return $false }
+  try {
+    $desc = (& file -b $Path 2>$null)
+    return ($desc -match 'Mach-O')
+  } catch {
+    return $false
+  }
+}
+
+function Get-MachOArchs([string]$Path) {
+  if (-not (Test-IsMachO $Path)) { return '' }
+  try {
+    return ((& lipo -archs $Path 2>$null) | Out-String).Trim()
+  } catch {
+    return ''
+  }
+}
 
 $Project = Join-Path $PSScriptRoot '../DotNetUninstall/DotNetUninstall.csproj'
 if (-not (Test-Path $Project)) { throw "Project file not found: $Project" }
@@ -174,12 +198,102 @@ foreach ($rid in $Rids) {
   }
 }
 
+$UniversalBundle = $null
+if (-not $SkipUniversal -and $AppBundles.Count -ge 2) {
+  $arm64Bundle = $AppBundles | Where-Object { $_.Rid -eq 'osx-arm64' } | Select-Object -First 1
+  $x64Bundle = $AppBundles | Where-Object { $_.Rid -eq 'osx-x64' } | Select-Object -First 1
+
+  if ($arm64Bundle -and $x64Bundle) {
+    $lipo = Get-Command lipo -ErrorAction SilentlyContinue
+    if (-not $lipo) {
+      Warn 'lipo not found (Xcode command-line tools). Skipping universal app merge.'
+    } else {
+      Step 'Creating universal macOS app bundle'
+      $universalOut = Join-Path $OutRoot 'osx-universal'
+      Remove-Item $universalOut -Recurse -Force -ErrorAction SilentlyContinue | Out-Null
+      New-Item -ItemType Directory -Force -Path $universalOut | Out-Null
+
+      $sourceApp = $arm64Bundle.Path
+      $sourceX64App = $x64Bundle.Path
+      $universalAppPath = Join-Path $universalOut (Split-Path $sourceApp -Leaf)
+      Copy-Item $sourceApp $universalAppPath -Recurse
+
+      $arm64MacOS = Join-Path $sourceApp 'Contents/MacOS'
+      $x64MacOS = Join-Path $sourceX64App 'Contents/MacOS'
+      $universalMacOS = Join-Path $universalAppPath 'Contents/MacOS'
+      if (-not (Test-Path $arm64MacOS) -or -not (Test-Path $x64MacOS) -or -not (Test-Path $universalMacOS)) {
+        throw 'Unexpected app bundle layout while creating universal app (missing Contents/MacOS).'
+      }
+
+      $arm64Names = @(Get-ChildItem $arm64MacOS -File | Select-Object -ExpandProperty Name)
+      $x64Names = @(Get-ChildItem $x64MacOS -File | Select-Object -ExpandProperty Name)
+      $allNames = @($arm64Names + $x64Names)
+      $allNames = @($allNames | Sort-Object -Unique)
+
+      foreach ($name in $allNames) {
+        $arm64File = Join-Path $arm64MacOS $name
+        $x64File = Join-Path $x64MacOS $name
+        $destFile = Join-Path $universalMacOS $name
+
+        if (-not (Test-Path $arm64File)) {
+          Warn "File only present in x64 output, copying as-is: $name"
+          Copy-Item $x64File $destFile -Force
+          continue
+        }
+        if (-not (Test-Path $x64File)) {
+          Warn "File only present in arm64 output, keeping arm64 variant: $name"
+          continue
+        }
+
+        if (-not (Test-IsMachO $arm64File) -or -not (Test-IsMachO $x64File)) {
+          continue
+        }
+
+        $armArchs = Get-MachOArchs $arm64File
+        $x64Archs = Get-MachOArchs $x64File
+
+        if (-not $armArchs -or -not $x64Archs) {
+          Warn "Could not inspect architectures for $name; keeping arm64 variant."
+          continue
+        }
+
+        if ($armArchs -eq $x64Archs) {
+          Info "Skipping lipo for $name (already same archs: $armArchs)."
+          Copy-Item $arm64File $destFile -Force
+        } else {
+          Step "Merging Mach-O binary with lipo: $name"
+          & lipo -create $x64File $arm64File -output $destFile
+          if ($LASTEXITCODE -ne 0) { throw "lipo failed for $name" }
+        }
+
+        & chmod +x $destFile
+      }
+
+      $exePath = Join-Path $universalMacOS 'DotNetUninstall'
+      if (Test-Path $exePath) {
+        $exeArchs = Get-MachOArchs $exePath
+        if ($exeArchs) { Info "Universal executable architectures: $exeArchs" }
+      }
+
+      $UniversalBundle = [BundleInfo]::new()
+      $UniversalBundle.Rid = 'osx-universal'
+      $UniversalBundle.Path = $universalAppPath
+      $AppBundles += $UniversalBundle
+      Info "Universal app created: $universalAppPath"
+    }
+  } else {
+    Info 'Skipping universal app merge (requires both osx-arm64 and osx-x64 outputs).'
+  }
+}
+
 if ($Dmg) {
   $Stage = Join-Path $Artifacts 'macos-stage'
   Remove-Item $Stage -Recurse -Force -ErrorAction SilentlyContinue | Out-Null
   New-Item -ItemType Directory -Force -Path $Stage | Out-Null
-  $multi = ($AppBundles.Count -gt 1)
-  foreach ($b in $AppBundles) {
+  $BundlesForDmg = @()
+  if ($UniversalBundle) { $BundlesForDmg = @($UniversalBundle) } else { $BundlesForDmg = @($AppBundles) }
+  $multi = ($BundlesForDmg.Count -gt 1)
+  foreach ($b in $BundlesForDmg) {
     $leaf = Split-Path $b.Path -Leaf
     $dest = if ($multi) {
       $nameNoExt = [System.IO.Path]::GetFileNameWithoutExtension($leaf)
