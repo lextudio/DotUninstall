@@ -21,6 +21,16 @@
 .PARAMETER SkipUniversal
   Disable universal merge (keeps per-RID app bundles).
 
+.PARAMETER DmgBackgroundPath
+  Optional background image for DMG Finder window layout. If omitted and social-preview.png exists at repo root,
+  it is used automatically.
+
+.PARAMETER DmgBackgroundMaxWidth
+  Maximum background/window width used for DMG layout (default: 1100).
+
+.PARAMETER DmgBackgroundMaxHeight
+  Maximum background/window height used for DMG layout (default: 700).
+
 .EXAMPLE
   ./scripts/package-macos.ps1 -Dmg
 
@@ -33,6 +43,9 @@ param(
   [string]$Configuration = 'Release',
   [switch]$Dmg,
   [switch]$SkipUniversal,
+  [string]$DmgBackgroundPath,
+  [int]$DmgBackgroundMaxWidth = 1100,
+  [int]$DmgBackgroundMaxHeight = 700,
   [string]$IconPath,
   [switch]$VerifyIcon,
   [string]$MacMinVersion = '12.0',      # e.g. 12.0 ; if provided, will rewrite Mach-O LC_BUILD_VERSION minos
@@ -65,6 +78,27 @@ function Get-MachOArchs([string]$Path) {
   }
 }
 
+function Get-ImageDimensions([string]$Path) {
+  try {
+    $sips = Get-Command sips -ErrorAction SilentlyContinue
+    if (-not $sips) { return $null }
+    $out = & sips -g pixelWidth -g pixelHeight $Path 2>$null
+    if (-not $out) { return $null }
+    $w = $null
+    $h = $null
+    foreach ($line in $out) {
+      $mW = [regex]::Match($line, 'pixelWidth:\s*([0-9]+)')
+      if ($mW.Success) { $w = [int]$mW.Groups[1].Value }
+      $mH = [regex]::Match($line, 'pixelHeight:\s*([0-9]+)')
+      if ($mH.Success) { $h = [int]$mH.Groups[1].Value }
+    }
+    if ($w -and $h) { return @{ Width = $w; Height = $h } }
+    return $null
+  } catch {
+    return $null
+  }
+}
+
 $Project = Join-Path $PSScriptRoot '../DotNetUninstall/DotNetUninstall.csproj'
 if (-not (Test-Path $Project)) { throw "Project file not found: $Project" }
 
@@ -87,6 +121,14 @@ New-Item -ItemType Directory -Force -Path $ReleaseOut | Out-Null
 $OutRoot   = Join-Path $Artifacts 'publish'
 Remove-Item $OutRoot -Recurse -Force -ErrorAction SilentlyContinue | Out-Null
 New-Item -ItemType Directory -Force -Path $OutRoot | Out-Null
+
+if (-not $IconPath) {
+  $defaultIconPath = Join-Path $RepoRoot 'DotNetUninstall/Assets/Images/AppIcon.icns'
+  if (Test-Path $defaultIconPath) {
+    $IconPath = $defaultIconPath
+    Info "Using default macOS icon: $IconPath"
+  }
+}
 
 class BundleInfo {
   [string]$Rid
@@ -302,11 +344,172 @@ if ($Dmg) {
     } else { $leaf }
     Copy-Item $b.Path (Join-Path $Stage $dest) -Recurse
   }
+  $applicationsShortcut = Join-Path $Stage 'Applications'
+  if (Test-Path $applicationsShortcut) {
+    Remove-Item $applicationsShortcut -Recurse -Force -ErrorAction SilentlyContinue | Out-Null
+  }
+  # Standard drag-and-drop install hint in DMG: app bundle + Applications shortcut.
+  & ln -s /Applications $applicationsShortcut
+  if ($LASTEXITCODE -ne 0) { throw 'Failed to create Applications shortcut in DMG stage.' }
+
+  $resolvedBackground = $null
+  if ($DmgBackgroundPath) {
+    if (-not (Test-Path $DmgBackgroundPath)) { throw "DMG background file not found: $DmgBackgroundPath" }
+    $resolvedBackground = Resolve-Path $DmgBackgroundPath
+  } else {
+    $defaultDmgBackground = Join-Path $RepoRoot 'social-preview.png'
+    if (Test-Path $defaultDmgBackground) {
+      $resolvedBackground = Resolve-Path $defaultDmgBackground
+    } else {
+      $legacyBackground = Join-Path $RepoRoot 'DotUninstall.png'
+      if (Test-Path $legacyBackground) {
+        Warn 'social-preview.png not found; falling back to DotUninstall.png for DMG background.'
+        $resolvedBackground = Resolve-Path $legacyBackground
+      }
+    }
+  }
+
+  $hasBackground = $false
+  $layoutWidth = 980
+  $layoutHeight = 640
+  $appIconX = 700
+  $appsIconX = 860
+  $iconsY = 500
+  if ($resolvedBackground) {
+    $backgroundDir = Join-Path $Stage '.background'
+    New-Item -ItemType Directory -Force -Path $backgroundDir | Out-Null
+    $dims = Get-ImageDimensions $resolvedBackground
+    if ($dims) {
+      # Keep aspect ratio while constraining to a practical Finder window size.
+      $scale = [Math]::Min([double]$DmgBackgroundMaxWidth / $dims.Width, [double]$DmgBackgroundMaxHeight / $dims.Height)
+      if ($scale -gt 1.0) { $scale = 1.0 }
+      $layoutWidth = [Math]::Max(760, [int][Math]::Round($dims.Width * $scale))
+      $layoutHeight = [Math]::Max(500, [int][Math]::Round($dims.Height * $scale))
+    }
+
+    $stageBackground = Join-Path $backgroundDir 'background.png'
+    # Scale background to exactly match the Finder window to avoid cropped composition.
+    & sips -z $layoutHeight $layoutWidth $resolvedBackground --out $stageBackground | Out-Null
+    if ($LASTEXITCODE -ne 0 -or -not (Test-Path $stageBackground)) {
+      Warn 'Failed to scale DMG background to window size; copying original image.'
+      Copy-Item $resolvedBackground $stageBackground -Force
+      $dims = Get-ImageDimensions $stageBackground
+      if ($dims) {
+        $layoutWidth = $dims.Width
+        $layoutHeight = $dims.Height
+      }
+    }
+    $hasBackground = $true
+
+    # Place icons in lower-right whitespace while keeping generous insets to avoid scrollbars.
+    $appIconX = [int][Math]::Round($layoutWidth * 0.70)
+    $appsIconX = [int][Math]::Round($layoutWidth * 0.84)
+    $iconsY = [int][Math]::Round($layoutHeight * 0.70)
+
+    $rightInset = 170
+    $bottomInset = 170
+    if ($appsIconX -gt ($layoutWidth - $rightInset)) { $appsIconX = $layoutWidth - $rightInset }
+    if ($appIconX -gt ($appsIconX - 180)) { $appIconX = $appsIconX - 180 }
+    if ($iconsY -gt ($layoutHeight - $bottomInset)) { $iconsY = $layoutHeight - $bottomInset }
+
+    Info "DMG background image applied: $resolvedBackground (scaled to ${layoutWidth}x${layoutHeight})"
+  }
+
   if (Test-Path LICENSE) { Copy-Item LICENSE $Stage }
   $dmgName = "DotUninstall-macos-$Version.dmg"
   $dmgPath = Join-Path $ReleaseOut $dmgName
-  Step "Creating DMG: $dmgPath"
-  & hdiutil create -volname 'DotUninstall' -srcfolder $Stage -ov -format UDZO $dmgPath | Out-Null
+  $rwDmgPath = Join-Path $ReleaseOut "DotUninstall-macos-$Version-rw.dmg"
+  Remove-Item $rwDmgPath -Force -ErrorAction SilentlyContinue | Out-Null
+  Remove-Item $dmgPath -Force -ErrorAction SilentlyContinue | Out-Null
+
+  Step "Creating writable DMG: $rwDmgPath"
+  & hdiutil create -volname 'DotUninstall' -srcfolder $Stage -ov -format UDRW $rwDmgPath | Out-Null
+  if ($LASTEXITCODE -ne 0) { throw "Failed to create writable DMG: $rwDmgPath" }
+
+  $deviceNode = $null
+  $mountPoint = $null
+  try {
+    Step 'Applying Finder window layout for DMG'
+    $attachOutput = & hdiutil attach -readwrite -noverify -noautoopen $rwDmgPath
+    if ($LASTEXITCODE -ne 0) { throw 'Failed to mount writable DMG for styling.' }
+
+    foreach ($line in $attachOutput) {
+      if ($line -match '^/dev/') {
+        $parts = $line -split '\s+'
+        if ($parts.Count -ge 1) { $deviceNode = $parts[0] }
+      }
+      if ($line -match '/Volumes/') {
+        $parts = $line -split '\s+'
+        if ($parts.Count -ge 1) { $mountPoint = $parts[$parts.Count - 1] }
+      }
+    }
+    if (-not $deviceNode) { throw 'Could not determine mounted DMG device node.' }
+    if (-not $mountPoint) { throw 'Could not determine mounted DMG mount point.' }
+
+    $finderDiskName = 'DotUninstall'
+    $appInStage = Get-ChildItem $Stage -Directory -Filter '*.app' | Select-Object -First 1
+    $appBundleName = if ($appInStage) { $appInStage.Name } else { 'DotUninstall.app' }
+
+    $bgLine = ''
+    if ($hasBackground) { $bgLine = 'set background picture of viewOptions to file ".background:background.png"' }
+
+    $scriptLines = @(
+      "tell application `"Finder`"",
+      "  tell disk `"$finderDiskName`"",
+      "    open",
+      "    tell container window",
+      "      set current view to icon view",
+      "      set toolbar visible to false",
+      "      set statusbar visible to false",
+      "      set bounds to {120, 120, $([int](120 + $layoutWidth)), $([int](120 + $layoutHeight))}",
+      "    end tell",
+      "    set viewOptions to the icon view options of container window",
+      "    set arrangement of viewOptions to not arranged",
+      "    set icon size of viewOptions to 84",
+      "    set text size of viewOptions to 14"
+    )
+    if ($bgLine) { $scriptLines += "    $bgLine" }
+    $scriptLines += @(
+      "    try",
+      "      set position of item `"$appBundleName`" of container window to {$appIconX, $iconsY}",
+      "    end try",
+      "    try",
+      "      set position of item `"Applications`" of container window to {$appsIconX, $iconsY}",
+      "    end try",
+      "    update without registering applications",
+      "    delay 1",
+      "    close",
+      "    open",
+      "    delay 1",
+      "  end tell",
+      "end tell"
+    )
+    $appleScript = $scriptLines -join [Environment]::NewLine
+    & osascript -e $appleScript | Out-Null
+    if ($LASTEXITCODE -ne 0) { Warn 'Could not fully apply DMG Finder layout; continuing with default layout.' }
+  } finally {
+    if ($deviceNode) {
+      $detached = $false
+      for ($i = 0; $i -lt 6; $i++) {
+        & hdiutil detach $deviceNode -quiet | Out-Null
+        if ($LASTEXITCODE -eq 0) {
+          $detached = $true
+          break
+        }
+        Start-Sleep -Seconds 1
+      }
+      if (-not $detached) { throw "Failed to detach DMG device: $deviceNode" }
+    }
+  }
+
+  Step "Converting DMG to compressed image: $dmgPath"
+  & hdiutil convert $rwDmgPath -format UDZO -ov -o $dmgPath | Out-Null
+  if ($LASTEXITCODE -ne 0) { throw "Failed to convert DMG to compressed image: $dmgPath" }
+  if (-not (Test-Path $dmgPath) -and (Test-Path "$dmgPath.dmg")) {
+    Move-Item "$dmgPath.dmg" $dmgPath -Force
+  }
+  Remove-Item $rwDmgPath -Force -ErrorAction SilentlyContinue | Out-Null
+
   Info "DMG created: $dmgPath"
   Warn 'Remember to codesign & notarize for distribution.'
 }

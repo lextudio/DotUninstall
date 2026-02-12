@@ -14,13 +14,25 @@
 .PARAMETER OutputDir
   Directory where generated artifacts are placed. Defaults to Assets/Images relative to repo root.
 
+.PARAMETER NoBackgroundRemoval
+  Skip automatic conversion of a flat background color to transparency before generating icon sizes.
+
+.PARAMETER BackgroundColor
+  Background color to convert to transparent when source has no alpha (default: #EBEAEA).
+
+.PARAMETER BackgroundFuzzPercent
+  Color matching tolerance percentage used with ImageMagick when removing background (default: 4).
+
 .EXAMPLE
   ./scripts/generate-icons.ps1 -Source ./logo.png
 
 #>
 param(
   [string]$Source = (Join-Path (Resolve-Path (Join-Path $PSScriptRoot '..')) 'logo.png'),
-  [string]$OutputDir
+  [string]$OutputDir,
+  [switch]$NoBackgroundRemoval,
+  [string]$BackgroundColor = '#EBEAEA',
+  [int]$BackgroundFuzzPercent = 4
 )
 
 Set-StrictMode -Version Latest
@@ -30,6 +42,17 @@ function Step($m){ Write-Host "[STEP] $m" -ForegroundColor Cyan }
 function Info($m){ Write-Host "[INFO] $m" -ForegroundColor DarkGray }
 function Warn($m){ Write-Host "[WARN] $m" -ForegroundColor Yellow }
 function Err($m){ Write-Host "[ERR ] $m" -ForegroundColor Red }
+function Get-HasAlpha([string]$Path) {
+  try {
+    $out = & sips -g hasAlpha $Path 2>$null
+    foreach ($line in $out) {
+      if ($line -match 'hasAlpha:\s*(\w+)') {
+        return ($matches[1].ToLowerInvariant() -eq 'yes')
+      }
+    }
+  } catch { }
+  return $false
+}
 
 if (-not (Test-Path $Source)) { throw "Source image not found: $Source" }
 
@@ -39,20 +62,38 @@ if (-not $OutputDir) {
 New-Item -ItemType Directory -Force -Path $OutputDir | Out-Null
 
 # Generate resized PNG set
-$pngSizes = @(16,24,32,48,64,128,256,512)
+$pngSizes = @(16,24,32,48,64,128,256,512,1024)
 $baseName = 'logo'
 $srcAbs = (Resolve-Path $Source).Path
+$effectiveSource = $srcAbs
+$magick = Get-Command magick -ErrorAction SilentlyContinue
+$sourceHasAlpha = Get-HasAlpha $srcAbs
+
+if (-not $NoBackgroundRemoval -and -not $sourceHasAlpha -and $magick) {
+  $preparedDir = Join-Path $OutputDir '.generated'
+  New-Item -ItemType Directory -Force -Path $preparedDir | Out-Null
+  $preparedSource = Join-Path $preparedDir 'icon-source-transparent.png'
+  Step "Preparing transparent icon source (remove background $BackgroundColor, fuzz ${BackgroundFuzzPercent}%)"
+  & magick $srcAbs -alpha on -fuzz "$BackgroundFuzzPercent%" -transparent $BackgroundColor $preparedSource
+  if ($LASTEXITCODE -eq 0 -and (Test-Path $preparedSource) -and (Get-HasAlpha $preparedSource)) {
+    $effectiveSource = (Resolve-Path $preparedSource).Path
+    Info "Transparent source prepared: $effectiveSource"
+  } else {
+    Warn 'Transparent conversion failed or alpha not detected; keeping original source.'
+  }
+} elseif (-not $NoBackgroundRemoval -and -not $sourceHasAlpha -and -not $magick) {
+  Warn 'Source has no alpha and ImageMagick is unavailable; icons may include an opaque background.'
+}
 
 Step 'Generating resized PNG assets'
 foreach ($s in $pngSizes) {
   $dest = Join-Path $OutputDir ("$baseName-$s.png")
-  & sips -z $s $s $srcAbs --out $dest | Out-Null
+  & sips -z $s $s $effectiveSource --out $dest | Out-Null
   Info "Generated $dest"
 }
 
 # Windows ICO
 $icoPath = Join-Path $OutputDir 'app.ico'
-$magick = Get-Command magick -ErrorAction SilentlyContinue
 $png2ico = Get-Command png2ico -ErrorAction SilentlyContinue
 if ($magick) {
   Step 'Generating ICO via ImageMagick'
@@ -89,7 +130,7 @@ foreach ($p in $macPairs) {
   $targetPx = $p.Size * $p.Scale
   $srcForSize = Join-Path $OutputDir ("$baseName-$targetPx.png")
   if (-not (Test-Path $srcForSize)) {
-    & sips -z $targetPx $targetPx $srcAbs --out $srcForSize | Out-Null
+    & sips -z $targetPx $targetPx $effectiveSource --out $srcForSize | Out-Null
   }
   Copy-Item $srcForSize (Join-Path $icnsDir $destName)
 }
