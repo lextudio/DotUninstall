@@ -10,10 +10,24 @@ namespace DotNetUninstall.Presentation;
 
 public sealed partial class MainPage : Page
 {
+    private readonly DispatcherTimer? _macSystemThemePollTimer;
+    private ElementTheme? _lastObservedMacSystemTheme;
+
     public MainPage()
     {
         this.InitializeComponent();
         this.DataContextChanged += MainPage_DataContextChanged;
+        this.Loaded += MainPage_Loaded;
+        this.Unloaded += MainPage_Unloaded;
+
+        if (OperatingSystem.IsMacOS())
+        {
+            _macSystemThemePollTimer = new DispatcherTimer
+            {
+                Interval = TimeSpan.FromSeconds(2)
+            };
+            _macSystemThemePollTimer.Tick += (_, _) => ApplyMacSystemThemeIfNeeded();
+        }
     }
 
     private MainViewModel? _vm;
@@ -58,13 +72,145 @@ public sealed partial class MainPage : Page
         }
 
         var requestedTheme = _vm.RequestedElementTheme;
-        RequestedTheme = requestedTheme;
+        if (requestedTheme == ElementTheme.Default && OperatingSystem.IsMacOS())
+        {
+            StartMacSystemThemeSync();
+            ApplyMacSystemThemeIfNeeded(force: true);
+            return;
+        }
+
+        StopMacSystemThemeSync();
+        ApplyTheme(this, requestedTheme);
 
         // Apply at window root too so Shell-level visuals refresh immediately.
         if (DotNetUninstall.App.CurrentMainWindow?.Content is FrameworkElement root && !ReferenceEquals(root, this))
         {
-            root.RequestedTheme = requestedTheme;
+            ApplyTheme(root, requestedTheme);
         }
+    }
+
+    private void MainPage_Loaded(object sender, RoutedEventArgs e)
+    {
+        if (_vm?.RequestedElementTheme == ElementTheme.Default && OperatingSystem.IsMacOS())
+        {
+            StartMacSystemThemeSync();
+            ApplyMacSystemThemeIfNeeded(force: true);
+        }
+    }
+
+    private void MainPage_Unloaded(object sender, RoutedEventArgs e)
+    {
+        StopMacSystemThemeSync();
+    }
+
+    private void StartMacSystemThemeSync()
+    {
+        if (_macSystemThemePollTimer is null || _macSystemThemePollTimer.IsEnabled)
+        {
+            return;
+        }
+
+        _macSystemThemePollTimer.Start();
+    }
+
+    private void StopMacSystemThemeSync()
+    {
+        if (_macSystemThemePollTimer is null)
+        {
+            return;
+        }
+
+        if (_macSystemThemePollTimer.IsEnabled)
+        {
+            _macSystemThemePollTimer.Stop();
+        }
+
+        _lastObservedMacSystemTheme = null;
+    }
+
+    private void ApplyMacSystemThemeIfNeeded(bool force = false)
+    {
+        if (!OperatingSystem.IsMacOS() || _vm?.RequestedElementTheme != ElementTheme.Default)
+        {
+            return;
+        }
+
+        var currentSystemTheme = DetectMacSystemTheme();
+        if (currentSystemTheme is null)
+        {
+            return;
+        }
+
+        var resolvedTheme = currentSystemTheme.Value;
+        if (!force && _lastObservedMacSystemTheme == resolvedTheme)
+        {
+            return;
+        }
+
+        _lastObservedMacSystemTheme = resolvedTheme;
+        ApplyTheme(this, resolvedTheme);
+        if (DotNetUninstall.App.CurrentMainWindow?.Content is FrameworkElement root && !ReferenceEquals(root, this))
+        {
+            ApplyTheme(root, resolvedTheme);
+        }
+    }
+
+    private static ElementTheme? DetectMacSystemTheme()
+    {
+        try
+        {
+            var psi = new ProcessStartInfo("defaults", "read -g AppleInterfaceStyle")
+            {
+                RedirectStandardOutput = true,
+                RedirectStandardError = true,
+                UseShellExecute = false,
+                CreateNoWindow = true
+            };
+
+            using var proc = Process.Start(psi);
+            if (proc == null)
+            {
+                return null;
+            }
+
+            var output = proc.StandardOutput.ReadToEnd();
+            var error = proc.StandardError.ReadToEnd();
+            proc.WaitForExit(600);
+            if (proc.ExitCode == 0 && output.Trim().Equals("Dark", StringComparison.OrdinalIgnoreCase))
+            {
+                return ElementTheme.Dark;
+            }
+
+            // In light mode macOS reports missing key via non-zero exit code.
+            if (proc.ExitCode != 0 &&
+                error.Contains("does not exist", StringComparison.OrdinalIgnoreCase))
+            {
+                return ElementTheme.Light;
+            }
+
+            if (proc.ExitCode == 0)
+            {
+                return ElementTheme.Light;
+            }
+        }
+        catch
+        {
+            // Ignore detection errors to avoid forcing wrong theme.
+        }
+
+        return null;
+    }
+
+    private static void ApplyTheme(FrameworkElement element, ElementTheme requestedTheme)
+    {
+        if (requestedTheme == ElementTheme.Default)
+        {
+            // System mode: clear local value so Uno can track OS theme changes live.
+            element.ClearValue(FrameworkElement.RequestedThemeProperty);
+            return;
+        }
+
+        element.RequestedTheme = requestedTheme;
     }
 
     private void UpdateUninstallButtons()
