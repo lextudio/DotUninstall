@@ -13,7 +13,7 @@
       "request": "launch",
       "preLaunchTask": "build-desktop",
       // If you have changed target frameworks, make sure to update the program path.
-      "program": "${workspaceFolder}/DotNetUninstall/bin/Debug/net9.0-desktop/DotNetUninstall.dll",
+      "program": "${workspaceFolder}/DotNetUninstall/bin/Debug/net10.0-desktop/DotNetUninstall.dll",
       "args": [],
       "launchSettingsProfile": "DotNetUninstall (Desktop)",
       "env": {

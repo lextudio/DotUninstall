@@ -2,7 +2,7 @@ Param(
     [string]$Configuration = "Release",
     [switch]$SelfContained,
     [switch]$Trim,
-    [string]$Framework = 'net9.0-desktop',
+    [string]$Framework = 'net10.0-desktop',
     [switch]$NoClean,
     [switch]$Manifest, # opt-in: generate a manifest & checksums (package-all hashes anyway)
     [string]$WingetManifestsOut,
@@ -20,8 +20,8 @@ if (-not (Test-Path $project)) { throw "Project file not found: $project" }
 
 # Defensive: Sometimes Framework was observed resolving incorrectly to the configuration value (e.g. 'Release').
 if ($Framework -and ($Framework -ieq $Configuration -or $Framework -notmatch '^net[0-9]')) {
-    Write-Warning "Framework parameter value '$Framework' is invalid; defaulting to 'net9.0-desktop'."
-    $Framework = 'net9.0-desktop'
+    Write-Warning "Framework parameter value '$Framework' is invalid; defaulting to 'net10.0-desktop'."
+    $Framework = 'net10.0-desktop'
 }
 Write-Host "Config=$Configuration Framework=$Framework" -ForegroundColor DarkGray
 
