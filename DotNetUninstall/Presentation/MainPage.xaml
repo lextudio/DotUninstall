@@ -440,12 +440,7 @@
             <TextBlock
               FontSize="12"
               Opacity="0.6"
-              Text="Changes to this setting take effect after restarting the app." />
-            <TextBlock
-              FontSize="12"
-              Foreground="{ThemeResource Brush.Banner.Update.Foreground}"
-              Text="Restart required to apply metadata mode changes."
-              Visibility="{Binding MetadataSettingChangedRequiresRestart, Converter={StaticResource BoolToVisibilityConverter}}" />
+              Text="Changes to this setting apply immediately and refresh installed items." />
             <Button
               Padding="12,6"
               Command="{Binding CheckUpdateNowCommand}"

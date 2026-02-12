@@ -102,12 +102,11 @@ public partial class MainViewModel : ObservableObject
         _ => ElementTheme.Default
     };
 
-    // Effective runtime mode loaded at startup; changes to ShowDotNetMetadata apply on next launch.
+    // Effective runtime mode for the current session.
     [ObservableProperty]
     private bool isMetadataEnabledInSession;
 
-    [ObservableProperty]
-    private bool metadataSettingChangedRequiresRestart;
+    private readonly SemaphoreSlim metadataModeChangeGate = new(1, 1);
 
     public IAsyncRelayCommand RefreshCommand { get; }
     public IAsyncRelayCommand<DotnetInstallEntry> UninstallCommand { get; }
@@ -175,10 +174,33 @@ public partial class MainViewModel : ObservableObject
     partial void OnShowDotNetMetadataChanged(bool value)
     {
         PersistUiSettings();
-        MetadataSettingChangedRequiresRestart = value != IsMetadataEnabledInSession;
-        if (MetadataSettingChangedRequiresRestart)
+        _ = ApplyMetadataModeChangeAsync(value);
+    }
+
+    private async Task ApplyMetadataModeChangeAsync(bool enabled)
+    {
+        await metadataModeChangeGate.WaitAsync();
+        try
         {
-            StatusMessage = "Metadata setting saved. Restart the app to apply this change.";
+            if (IsMetadataEnabledInSession == enabled)
+            {
+                return;
+            }
+
+            IsMetadataEnabledInSession = enabled;
+            StatusMessage = enabled
+                ? "Metadata mode enabled. Refreshing..."
+                : "Metadata mode disabled. Refreshing...";
+
+            await RefreshAsync();
+        }
+        catch (Exception ex)
+        {
+            ErrorMessage = ex.Message;
+        }
+        finally
+        {
+            metadataModeChangeGate.Release();
         }
     }
 
