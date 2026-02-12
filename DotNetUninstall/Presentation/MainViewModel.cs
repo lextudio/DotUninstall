@@ -1164,9 +1164,9 @@ public partial class MainViewModel : ObservableObject
             // Preserve original command-line arguments (so hosts like 'dotnet' get their args, e.g. 'run')
             var rawArgs = Environment.GetCommandLineArgs();
             string argsPart = string.Empty;
-            if (rawArgs != null && rawArgs.Length > 0)
+            if (rawArgs != null && rawArgs.Length > 1)
             {
-                var quoted = rawArgs.Select(a => $"\"{EscapeForShell(a)}\"");
+                var quoted = rawArgs.Skip(1).Select(a => $"\"{EscapeForShell(a)}\"");
                 argsPart = " " + string.Join(' ', quoted);
             }
             // Build the shell command (one single string) and then escape it for embedding in AppleScript.
@@ -1192,17 +1192,32 @@ public partial class MainViewModel : ObservableObject
                 return;
             }
 
-            // Wait for AppleScript to finish prompting.
-            proc.WaitForExit();
+            // Hide this non-elevated window while the elevated instance is active.
+            var hidden = TrySetCurrentWindowVisible(false);
+            if (hidden)
+            {
+                ShowElevationOffer = false;
+                StatusMessage = "Elevated instance launched. This window is hidden until it exits.";
+            }
+
+            // Keep parent process alive while elevated process is running (AppleScript blocks on child lifetime).
+            await proc.WaitForExitAsync();
             if (proc.HasExited)
             {
                 var code = proc.ExitCode;
                 if (code != 0)
                 {
+                    if (hidden)
+                    {
+                        TrySetCurrentWindowVisible(true);
+                    }
                     ErrorMessage = $"Elevation script error (code {code})";
                     ShowElevationOffer = true; // keep offer visible
                     return;
                 }
+
+                // Elevated child exited; terminate this hidden parent process.
+                Environment.Exit(0);
             }
         }
         catch (Exception ex)
@@ -1211,6 +1226,278 @@ public partial class MainViewModel : ObservableObject
             ErrorMessage = "Elevation failed: " + ex.Message;
             ShowElevationOffer = true; // keep banner so user can try again
         }
+    }
+
+    private static bool TrySetCurrentWindowVisible(bool visible)
+    {
+        try
+        {
+            var window = Microsoft.UI.Xaml.Window.Current ?? DotNetUninstall.App.CurrentMainWindow;
+            if (window == null)
+            {
+                TraceVisibility($"TrySetCurrentWindowVisible({visible}) -> no window instance");
+                // Even if Uno window lookup fails, macOS app hide can still work.
+                var nativeOnly = TrySetVisibilityUsingMacNativeApplication(visible);
+                TraceVisibility($"TrySetVisibilityUsingMacNativeApplication({visible}) [no-window-path] => {nativeOnly}");
+                return nativeOnly;
+            }
+
+            if (TrySetVisibilityUsingNativeWindow(window, visible))
+            {
+                TraceVisibility($"TrySetVisibilityUsingNativeWindow({visible}) => true");
+                if (visible) window.Activate();
+                return true;
+            }
+            TraceVisibility($"TrySetVisibilityUsingNativeWindow({visible}) => false");
+
+            if (TrySetVisibilityUsingCoreWindow(window, visible))
+            {
+                TraceVisibility($"TrySetVisibilityUsingCoreWindow({visible}) => true");
+                if (visible) window.Activate();
+                return true;
+            }
+            TraceVisibility($"TrySetVisibilityUsingCoreWindow({visible}) => false");
+
+            if (TrySetVisibilityUsingAppWindow(window, visible))
+            {
+                TraceVisibility($"TrySetVisibilityUsingAppWindow({visible}) => true");
+                if (visible) window.Activate();
+                return true;
+            }
+            TraceVisibility($"TrySetVisibilityUsingAppWindow({visible}) => false");
+
+            if (TrySetVisibilityUsingMacNativeApplication(visible))
+            {
+                TraceVisibility($"TrySetVisibilityUsingMacNativeApplication({visible}) => true");
+                if (visible) window.Activate();
+                return true;
+            }
+            TraceVisibility($"TrySetVisibilityUsingMacNativeApplication({visible}) => false");
+
+            var windowType = window.GetType();
+            // Fallback: direct window Show/Hide methods if exposed on the runtime type.
+            var direct = windowType.GetMethod(visible ? "Show" : "Hide", Type.EmptyTypes);
+            if (direct != null)
+            {
+                direct.Invoke(window, null);
+                TraceVisibility($"Direct {windowType.FullName}.{(visible ? "Show" : "Hide")}() invoked");
+                if (visible) window.Activate();
+                return true;
+            }
+            TraceVisibility($"Direct {windowType.FullName}.{(visible ? "Show" : "Hide")}() missing");
+        }
+        catch (Exception ex)
+        {
+            TraceVisibility($"TrySetCurrentWindowVisible({visible}) exception: {ex.GetType().Name}: {ex.Message}");
+        }
+
+        TraceVisibility($"TrySetCurrentWindowVisible({visible}) => false (all paths)");
+        return false;
+    }
+
+    private static bool TrySetVisibilityUsingNativeWindow(Microsoft.UI.Xaml.Window window, bool visible)
+    {
+        try
+        {
+            var windowType = window.GetType();
+            var nativeWindow = windowType.GetProperty("NativeWindow")?.GetValue(window)
+                ?? windowType.GetProperty("NativeWrapper")?.GetValue(window);
+            if (nativeWindow == null) return false;
+
+            var nativeType = nativeWindow.GetType();
+            if (!visible)
+            {
+                var hide = nativeType.GetMethod("Hide", Type.EmptyTypes);
+                if (hide != null)
+                {
+                    hide.Invoke(nativeWindow, null);
+                    if (!IsWindowVisible(window)) return true;
+                }
+            }
+
+            var isVisibleProp = nativeType.GetProperty("IsVisible");
+            if (isVisibleProp?.CanWrite == true)
+            {
+                isVisibleProp.SetValue(nativeWindow, visible);
+                return true;
+            }
+
+            if (visible)
+            {
+                var show = nativeType.GetMethod("Show", Type.EmptyTypes);
+                if (show != null)
+                {
+                    show.Invoke(nativeWindow, null);
+                    return true;
+                }
+
+                var activate = nativeType.GetMethod("Activate", Type.EmptyTypes);
+                if (activate != null)
+                {
+                    activate.Invoke(nativeWindow, null);
+                    return true;
+                }
+            }
+        }
+        catch { }
+
+        return false;
+    }
+
+    private static bool TrySetVisibilityUsingCoreWindow(Microsoft.UI.Xaml.Window window, bool visible)
+    {
+        try
+        {
+            var windowType = window.GetType();
+            var coreWindow = windowType.GetProperty("CoreWindow")?.GetValue(window)
+                ?? windowType.GetProperty("CoreWindowSafe")?.GetValue(window);
+            if (coreWindow == null) return false;
+
+            var coreType = coreWindow.GetType();
+            var visibleProp = coreType.GetProperty("Visible");
+            if (visibleProp?.CanWrite == true)
+            {
+                visibleProp.SetValue(coreWindow, visible);
+                return true;
+            }
+        }
+        catch { }
+
+        return false;
+    }
+
+    private static bool TrySetVisibilityUsingAppWindow(Microsoft.UI.Xaml.Window window, bool visible)
+    {
+        try
+        {
+            var appWindow = window.GetType().GetProperty("AppWindow")?.GetValue(window);
+            if (appWindow == null) return false;
+
+            var appWindowType = appWindow.GetType();
+            if (visible)
+            {
+                var showNoArgs = appWindowType.GetMethod("Show", Type.EmptyTypes);
+                if (showNoArgs != null)
+                {
+                    showNoArgs.Invoke(appWindow, null);
+                    return true;
+                }
+
+                var showWithActivate = appWindowType.GetMethod("Show", new[] { typeof(bool) });
+                if (showWithActivate != null)
+                {
+                    showWithActivate.Invoke(appWindow, new object[] { true });
+                    return true;
+                }
+            }
+            else
+            {
+                var hide = appWindowType.GetMethod("Hide", Type.EmptyTypes);
+                if (hide != null)
+                {
+                    hide.Invoke(appWindow, null);
+                    if (!IsWindowVisible(window)) return true;
+                }
+            }
+        }
+        catch { }
+
+        return false;
+    }
+
+    private static bool IsWindowVisible(Microsoft.UI.Xaml.Window window)
+    {
+        try
+        {
+            var visibleProp = window.GetType().GetProperty("Visible");
+            if (visibleProp?.PropertyType == typeof(bool))
+            {
+                var value = visibleProp.GetValue(window);
+                if (value is bool b) return b;
+            }
+        }
+        catch { }
+
+        return true;
+    }
+
+    private static bool TrySetVisibilityUsingMacNativeApplication(bool visible)
+    {
+        if (!OperatingSystem.IsMacOS()) return false;
+
+        try
+        {
+            var nsApplication = objc_getClass("NSApplication");
+            if (nsApplication == IntPtr.Zero) return false;
+
+            var sharedApplicationSel = sel_registerName("sharedApplication");
+            if (sharedApplicationSel == IntPtr.Zero) return false;
+
+            var app = objc_msgSend_IntPtr(nsApplication, sharedApplicationSel);
+            if (app == IntPtr.Zero) return false;
+
+            var setActivationPolicySel = sel_registerName("setActivationPolicy:");
+            var activateIgnoringOtherAppsSel = sel_registerName("activateIgnoringOtherApps:");
+            var selectorName = visible ? "unhide:" : "hide:";
+            var selector = sel_registerName(selectorName);
+            if (selector == IntPtr.Zero || setActivationPolicySel == IntPtr.Zero) return false;
+
+            if (visible)
+            {
+                // Restore app as a regular Dock-visible application before unhiding.
+                _ = objc_msgSend_Bool_nint(app, setActivationPolicySel, NSApplicationActivationPolicyRegular);
+                objc_msgSend_Void_IntPtr(app, selector, IntPtr.Zero); // unhide:
+                if (activateIgnoringOtherAppsSel != IntPtr.Zero)
+                {
+                    objc_msgSend_Void_Bool(app, activateIgnoringOtherAppsSel, true);
+                }
+            }
+            else
+            {
+                // Hide first, then remove Dock presence while parent waits in background.
+                objc_msgSend_Void_IntPtr(app, selector, IntPtr.Zero); // hide:
+                _ = objc_msgSend_Bool_nint(app, setActivationPolicySel, NSApplicationActivationPolicyProhibited);
+            }
+
+            return true;
+        }
+        catch (Exception ex)
+        {
+            TraceVisibility($"TrySetVisibilityUsingMacNativeApplication({visible}) exception: {ex.GetType().Name}: {ex.Message}");
+            return false;
+        }
+    }
+
+    private const nint NSApplicationActivationPolicyRegular = 0;
+    private const nint NSApplicationActivationPolicyProhibited = 2;
+
+    [DllImport("/usr/lib/libobjc.A.dylib", EntryPoint = "objc_getClass")]
+    private static extern IntPtr objc_getClass(string name);
+
+    [DllImport("/usr/lib/libobjc.A.dylib", EntryPoint = "sel_registerName")]
+    private static extern IntPtr sel_registerName(string name);
+
+    [DllImport("/usr/lib/libobjc.A.dylib", EntryPoint = "objc_msgSend")]
+    private static extern IntPtr objc_msgSend_IntPtr(IntPtr receiver, IntPtr selector);
+
+    [DllImport("/usr/lib/libobjc.A.dylib", EntryPoint = "objc_msgSend")]
+    private static extern void objc_msgSend_Void_IntPtr(IntPtr receiver, IntPtr selector, IntPtr arg1);
+
+    [DllImport("/usr/lib/libobjc.A.dylib", EntryPoint = "objc_msgSend")]
+    private static extern bool objc_msgSend_Bool_nint(IntPtr receiver, IntPtr selector, nint arg1);
+
+    [DllImport("/usr/lib/libobjc.A.dylib", EntryPoint = "objc_msgSend")]
+    private static extern void objc_msgSend_Void_Bool(IntPtr receiver, IntPtr selector, bool arg1);
+
+    private static void TraceVisibility(string message)
+    {
+        try
+        {
+            var line = $"{DateTimeOffset.UtcNow:O} {message}";
+            var logPath = Path.Combine(GetAppDataRootPath(), "visibility-debug.log");
+            File.AppendAllText(logPath, line + Environment.NewLine);
+        }
+        catch { }
     }
 
     [RelayCommand]

@@ -16,6 +16,8 @@ public partial class App : Application
     protected Window? MainWindow { get; private set; }
     protected IHost? Host { get; private set; }
 
+    public static Window? CurrentMainWindow => (Current as App)?.MainWindow;
+
     protected async override void OnLaunched(LaunchActivatedEventArgs args)
     {
         var builder = this.CreateBuilder(args)
