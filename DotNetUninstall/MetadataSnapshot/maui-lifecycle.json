@@ -1,5 +1,36 @@
 {
-  "lastUpdated": "2026-03-01T03:28:34.6958434Z",
-  "source": null,
-  "entries": []
+  "lastUpdated": "2026-03-15T03:33:44.3779923Z",
+  "source": "https://dotnet.microsoft.com/platform/support/policy/maui",
+  "entries": [
+    {
+      "channel": "6.0",
+      "mauiVersion": ".NET MAUI 6",
+      "latestPatch": "6.0.553",
+      "eolDate": "2023-05-08"
+    },
+    {
+      "channel": "7.0",
+      "mauiVersion": ".NET MAUI 7",
+      "latestPatch": "7.0.101",
+      "eolDate": "2024-05-14"
+    },
+    {
+      "channel": "8.0",
+      "mauiVersion": ".NET MAUI 8",
+      "latestPatch": "8.0.100",
+      "eolDate": "2025-05-14"
+    },
+    {
+      "channel": "9.0",
+      "mauiVersion": ".NET MAUI 9",
+      "latestPatch": "9.0.120",
+      "eolDate": "2026-05-12"
+    },
+    {
+      "channel": "10.0",
+      "mauiVersion": ".NET MAUI 10",
+      "latestPatch": "10.0.50",
+      "eolDate": "2027-05-11"
+    }
+  ]
 }
