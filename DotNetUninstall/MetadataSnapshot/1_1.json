@@ -2540,5 +2540,9 @@
       "aspnetcore-runtime": null,
       "symbols": null
     }
-  ]
+  ],
+  "signature": {
+    "expiration": "2026-08-11T18:53:42.9807557+00:00",
+    "file": "releases.json.20260513185342.p7s"
+  }
 }
