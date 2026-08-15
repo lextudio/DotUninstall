@@ -3,11 +3,11 @@
   "releases-index": [
     {
       "channel-version": "11.0",
-      "latest-release": "11.0.0-preview.6",
-      "latest-release-date": "2026-07-14",
+      "latest-release": "11.0.0-preview.7",
+      "latest-release-date": "2026-08-11",
       "security": false,
-      "latest-runtime": "11.0.0-preview.6.26359.118",
-      "latest-sdk": "11.0.100-preview.6.26359.118",
+      "latest-runtime": "11.0.0-preview.7.26381.103",
+      "latest-sdk": "11.0.100-preview.7.26381.103",
       "product": ".NET",
       "support-phase": "preview",
       "release-type": "sts",
@@ -16,11 +16,11 @@
     },
     {
       "channel-version": "10.0",
-      "latest-release": "10.0.10",
-      "latest-release-date": "2026-07-14",
+      "latest-release": "10.0.11",
+      "latest-release-date": "2026-08-11",
       "security": true,
-      "latest-runtime": "10.0.10",
-      "latest-sdk": "10.0.302",
+      "latest-runtime": "10.0.11",
+      "latest-sdk": "10.0.400",
       "product": ".NET",
       "support-phase": "active",
       "release-type": "lts",
@@ -30,11 +30,11 @@
     },
     {
       "channel-version": "9.0",
-      "latest-release": "9.0.18",
-      "latest-release-date": "2026-07-14",
+      "latest-release": "9.0.19",
+      "latest-release-date": "2026-08-11",
       "security": true,
-      "latest-runtime": "9.0.18",
-      "latest-sdk": "9.0.316",
+      "latest-runtime": "9.0.19",
+      "latest-sdk": "9.0.317",
       "product": ".NET",
       "support-phase": "maintenance",
       "release-type": "sts",
@@ -44,11 +44,11 @@
     },
     {
       "channel-version": "8.0",
-      "latest-release": "8.0.29",
-      "latest-release-date": "2026-07-14",
+      "latest-release": "8.0.30",
+      "latest-release-date": "2026-08-11",
       "security": true,
-      "latest-runtime": "8.0.29",
-      "latest-sdk": "8.0.423",
+      "latest-runtime": "8.0.30",
+      "latest-sdk": "8.0.424",
       "product": ".NET",
       "support-phase": "maintenance",
       "release-type": "lts",
@@ -190,7 +190,7 @@
     }
   ],
   "signature": {
-    "expiration": "2026-10-12T18:09:51.9206888+00:00",
-    "file": "releases-index.json.20260714180951.p7s"
+    "expiration": "2026-11-09T22:12:48.3221052+00:00",
+    "file": "releases-index.json.20260811221248.p7s"
   }
 }
